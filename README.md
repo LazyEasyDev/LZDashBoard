@@ -1,27 +1,5 @@
 # Vue Dashboard Template
 
-[![Nuxt UI](https://img.shields.io/badge/Made%20with-Nuxt%20UI-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)
-
-Get started with the Vite + Vue dashboard template with multiple pages, collapsible sidebar, keyboard shortcuts, light & dark mode, command palette and more, powered by [Nuxt UI](https://ui.nuxt.com).
-
-- [Live demo](https://dashboard-vue-template.nuxt.dev)
-- [Documentation](https://ui.nuxt.com/docs/getting-started/installation/vue)
-
-<a href="https://dashboard-vue-template.nuxt.dev/" target="_blank">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://ui.nuxt.com/assets/templates/vue/dashboard-dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="https://ui.nuxt.com/assets/templates/vue/dashboard-light.png">
-    <img alt="Vue Dashboard Template" src="https://ui.nuxt.com/assets/templates/vue/dashboard-light.png">
-  </picture>
-</a>
-
-> The dashboard template for Nuxt is on https://github.com/nuxt-ui-templates/dashboard.
-
-## Quick Start
-
-```bash [Terminal]
-npm create nuxt@latest -- --no-modules -t ui-vue/dashboard
-```
 
 ## Deploy your own
 
