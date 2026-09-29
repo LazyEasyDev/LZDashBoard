@@ -1,3 +1,5 @@
+import { authMessages } from './auth'
+
 export const languageConfig = {
   defaultLanguage: 'en',
   storageKey: 'lzapp-language',
@@ -14,11 +16,13 @@ export const languageConfig = {
 export type LanguageCode = typeof languageConfig.languages[number]['code']
 
 export const english = {
+  ...authMessages.en,
   home: 'Home',
   admin: 'Admin',
   users: 'Users',
   settings: 'Settings',
   changePassword: 'Change password',
+  apiDocs: 'API docs',
   exit: 'Exit',
   language: 'Language',
   lightMode: 'Light mode',
@@ -37,11 +41,13 @@ export type TranslationKey = keyof typeof english
 export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
   en: english,
   'zh-CN': {
+    ...authMessages['zh-CN'],
     home: '首页',
     admin: '管理',
     users: '用户',
     settings: '设置',
     changePassword: '修改密码',
+    apiDocs: 'API 文档',
     exit: '退出',
     language: '语言',
     lightMode: '浅色模式',
@@ -55,11 +61,13 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
     switchToDark: '切换到深色模式'
   },
   es: {
+    ...authMessages.es,
     home: 'Inicio',
     admin: 'Administración',
     users: 'Usuarios',
     settings: 'Configuración',
     changePassword: 'Cambiar contraseña',
+    apiDocs: 'Documentación de la API',
     exit: 'Salir',
     language: 'Idioma',
     lightMode: 'Modo claro',
@@ -73,11 +81,13 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
     switchToDark: 'Cambiar al modo oscuro'
   },
   hi: {
+    ...authMessages.hi,
     home: 'होम',
     admin: 'प्रशासन',
     users: 'उपयोगकर्ता',
     settings: 'सेटिंग्स',
     changePassword: 'पासवर्ड बदलें',
+    apiDocs: 'API दस्तावेज़',
     exit: 'बाहर निकलें',
     language: 'भाषा',
     lightMode: 'लाइट मोड',
@@ -91,11 +101,13 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
     switchToDark: 'डार्क मोड चालू करें'
   },
   fr: {
+    ...authMessages.fr,
     home: 'Accueil',
     admin: 'Administration',
     users: 'Utilisateurs',
     settings: 'Paramètres',
     changePassword: 'Changer le mot de passe',
+    apiDocs: 'Documentation API',
     exit: 'Quitter',
     language: 'Langue',
     lightMode: 'Mode clair',
@@ -109,11 +121,13 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
     switchToDark: 'Passer au mode sombre'
   },
   ar: {
+    ...authMessages.ar,
     home: 'الرئيسية',
     admin: 'الإدارة',
     users: 'المستخدمون',
     settings: 'الإعدادات',
     changePassword: 'تغيير كلمة المرور',
+    apiDocs: 'توثيق API',
     exit: 'خروج',
     language: 'اللغة',
     lightMode: 'الوضع الفاتح',

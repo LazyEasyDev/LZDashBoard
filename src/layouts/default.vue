@@ -4,12 +4,15 @@ import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import type { NavigationMenuItem } from '@nuxt/ui'
 import { useAppTheme } from '../composables/useAppTheme'
+import { useAuth } from '../composables/useAuth'
+import { API_ORIGIN } from '../config/api'
 
 const open = ref(false)
 const isWideScreen = useMediaQuery('(min-width: 1536px)')
 const sidebarId = computed(() => isWideScreen.value ? 'default-wide' : 'default')
 const { t } = useI18n()
 const { colorMode, themeIcon, toggleTheme } = useAppTheme()
+const { canViewAdmin } = useAuth()
 
 const links = computed(() => [{
   label: t('home'),
@@ -19,11 +22,11 @@ const links = computed(() => [{
   onSelect: () => {
     open.value = false
   }
-}, {
+}, ...(canViewAdmin.value ? [{
   label: t('admin'),
   icon: 'i-lucide-folder',
   defaultOpen: true,
-  type: 'trigger',
+  type: 'trigger' as const,
   children: [{
     label: t('users'),
     icon: 'i-lucide-users',
@@ -32,7 +35,7 @@ const links = computed(() => [{
       open.value = false
     }
   }]
-}, {
+}] : []), {
   label: t('settings'),
   icon: 'i-lucide-settings',
   defaultOpen: true,
@@ -41,6 +44,16 @@ const links = computed(() => [{
     label: t('changePassword'),
     icon: 'i-lucide-key-round',
     to: '/settings/change-password',
+    onSelect: () => {
+      open.value = false
+    }
+  }, {
+    label: t('apiDocs'),
+    icon: 'i-lucide-book-open',
+    to: `${API_ORIGIN}/docs`,
+    external: true,
+    target: '_blank',
+    rel: 'noopener noreferrer',
     onSelect: () => {
       open.value = false
     }
@@ -89,10 +102,10 @@ const links = computed(() => [{
             <img
               :src="collapsed ? '/logo.svg' : '/lzapp-logo.svg'"
               alt=""
-              :width="collapsed ? 32 : 171"
-              :height="collapsed ? 32 : 36"
+              :width="collapsed ? 32 : 144"
+              :height="collapsed ? 32 : 30"
               class="block max-w-full object-contain object-left"
-              :class="collapsed ? 'size-8 shrink-0' : 'h-9 w-auto'"
+              :class="collapsed ? 'size-8 shrink-0' : 'h-auto w-36'"
             >
           </UButton>
         </UTooltip>

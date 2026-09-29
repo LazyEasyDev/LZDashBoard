@@ -7,7 +7,11 @@ import { languageConfig } from '../i18n/locales'
 import type { TranslationKey } from '../i18n/locales'
 import { useAppTheme } from '../composables/useAppTheme'
 
-defineProps<{ titleKey: TranslationKey }>()
+withDefaults(defineProps<{ titleKey?: TranslationKey, showSidebar?: boolean, showLogo?: boolean }>(), {
+  titleKey: undefined,
+  showSidebar: true,
+  showLogo: false
+})
 
 const { locale, t } = useI18n()
 const { themeLabelKey, themeIcon, toggleTheme } = useAppTheme()
@@ -25,18 +29,28 @@ const currentLanguage = computed(() => languageConfig.languages.find(language =>
 <template>
   <UDashboardNavbar
     dir="ltr"
+    :toggle="showSidebar"
     :ui="{
       root: 'gap-2',
       left: 'min-w-0 flex-1',
-      title: 'whitespace-normal break-words text-base leading-tight',
+      title: 'min-w-0 whitespace-normal break-words text-base leading-tight',
       right: 'ml-auto shrink-0 gap-1 sm:gap-2'
     }"
   >
-    <template #leading>
-      <UDashboardSidebarCollapse />
+    <template v-if="showSidebar || showLogo" #leading>
+      <UDashboardSidebarCollapse v-if="showSidebar" />
+      <RouterLink v-if="showLogo" to="/" class="block shrink-0">
+        <img
+          :src="'/lzapp-logo.svg'"
+          alt="LZApp"
+          width="228"
+          height="48"
+          class="h-auto w-32 sm:w-36"
+        >
+      </RouterLink>
     </template>
 
-    <template #title>
+    <template v-if="titleKey" #title>
       <span :dir="currentLanguage.dir">{{ t(titleKey) }}</span>
     </template>
 

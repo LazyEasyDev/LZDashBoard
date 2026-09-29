@@ -10,6 +10,7 @@ import ui from '@nuxt/ui/vue-plugin'
 
 import App from './App.vue'
 import { i18n } from './i18n'
+import { authGuard } from './authGuard'
 
 const app = createApp(App)
 
@@ -18,6 +19,8 @@ const router = createRouter({
   routes: setupLayouts(routes as RouteRecordRaw[]),
   history: createWebHistory()
 })
+
+router.beforeEach(authGuard)
 
 app.use(head)
 app.use(i18n)
