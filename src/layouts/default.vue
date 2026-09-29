@@ -1,18 +1,34 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
-import type { NavigationMenuItem } from '@nuxt/ui'
+import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui'
 import { useAppTheme } from '../composables/useAppTheme'
 import { useAuth } from '../composables/useAuth'
 import { API_ORIGIN } from '../config/api'
 
 const open = ref(false)
-const isWideScreen = useMediaQuery('(min-width: 1536px)')
-const sidebarId = computed(() => isWideScreen.value ? 'default-wide' : 'default')
 const { t } = useI18n()
 const { colorMode, themeIcon, toggleTheme } = useAppTheme()
-const { canViewAdmin } = useAuth()
+const { user, canViewAdmin } = useAuth()
+
+const accountMenuItems = computed<DropdownMenuItem[][]>(() => [[{
+  label: user.value?.email ?? '',
+  avatar: { alt: user.value?.email ?? '' },
+  type: 'label'
+}], [{
+  label: t('changePassword'),
+  icon: 'i-lucide-key-round',
+  to: '/user/reset-password'
+}, {
+  label: t(colorMode.value === 'dark' ? 'lightMode' : 'darkMode'),
+  icon: themeIcon.value,
+  onSelect: toggleTheme
+}], [{
+  label: t('exit'),
+  icon: 'i-lucide-log-out',
+  color: 'error',
+  to: '/settings/exit'
+}]])
 
 const links = computed(() => [{
   label: t('home'),
@@ -41,33 +57,12 @@ const links = computed(() => [{
   defaultOpen: true,
   type: 'trigger',
   children: [{
-    label: t('changePassword'),
-    icon: 'i-lucide-key-round',
-    to: '/settings/change-password',
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
     label: t('apiDocs'),
     icon: 'i-lucide-book-open',
     to: `${API_ORIGIN}/docs`,
     external: true,
     target: '_blank',
     rel: 'noopener noreferrer',
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
-    label: t(colorMode.value === 'dark' ? 'lightMode' : 'darkMode'),
-    icon: themeIcon.value,
-    onSelect: () => {
-      toggleTheme()
-      open.value = false
-    }
-  }, {
-    label: t('exit'),
-    icon: 'i-lucide-log-out',
-    to: '/settings/exit',
     onSelect: () => {
       open.value = false
     }
@@ -78,15 +73,12 @@ const links = computed(() => [{
 <template>
   <UDashboardGroup unit="rem" storage="local">
     <UDashboardSidebar
-      :id="sidebarId"
-      :key="sidebarId"
+      id="default"
       v-model:open="open"
-      :default-size="isWideScreen ? 20 : 15"
-      :max-size="20"
       collapsible
       resizable
       class="bg-elevated/25"
-      :ui="{ header: 'px-2' }"
+      :ui="{ header: 'px-2', footer: 'lg:border-t lg:border-default' }"
     >
       <template #header="{ collapsed }">
         <UTooltip text="LZApp" :disabled="!collapsed">
@@ -120,6 +112,29 @@ const links = computed(() => [{
           tooltip
           popover
         />
+      </template>
+
+      <template #footer="{ collapsed }">
+        <UDropdownMenu
+          v-if="user"
+          :items="accountMenuItems"
+          :content="{ align: 'center', collisionPadding: 12 }"
+          :ui="{ content: collapsed ? 'w-48' : 'w-(--reka-dropdown-menu-trigger-width)' }"
+          :modal="false"
+        >
+          <UButton
+            :avatar="{ alt: user.email }"
+            :label="collapsed ? undefined : user.email"
+            :trailing-icon="collapsed ? undefined : 'i-lucide-chevrons-up-down'"
+            color="neutral"
+            variant="ghost"
+            block
+            :square="collapsed"
+            :aria-label="user.email"
+            class="w-full min-w-0 cursor-pointer overflow-hidden data-[state=open]:bg-elevated"
+            :ui="{ trailingIcon: 'text-dimmed ms-auto' }"
+          />
+        </UDropdownMenu>
       </template>
     </UDashboardSidebar>
 

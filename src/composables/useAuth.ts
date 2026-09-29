@@ -17,8 +17,9 @@ export class ApiError extends Error {
 }
 
 export async function apiRequest<Response>(path: string, body?: unknown): Promise<Response> {
+  const requestMethod = body === undefined ? 'GET' : 'POST'
   const response = await fetch(`${API_ORIGIN}${path}`, {
-    method: body === undefined ? 'GET' : 'POST',
+		method: requestMethod,
     credentials: 'include',
     cache: 'no-store',
     signal: AbortSignal.timeout(15_000),
@@ -77,14 +78,16 @@ async function restoreSession() {
   await restoring
 }
 
-const canViewAdmin = computed(() => {
+const access = computed<string[]>(() => {
   try {
-    const access: unknown = JSON.parse(user.value?.access ?? '[]')
-    return Array.isArray(access) && access.some(value => value === 'admin' || value === 'viewall')
+		const value: unknown = JSON.parse(user.value?.access ?? '[]')
+		return Array.isArray(value) && value.every(item => typeof item === 'string') ? value : []
   } catch {
-    return false
+		return []
   }
 })
+const canViewAdmin = computed(() => access.value.some(value => value === 'admin' || value === 'viewall'))
+const canManageUsers = computed(() => access.value.includes('admin'))
 
 export function safeLocalRedirect(value: unknown): string {
   if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) return '/'
@@ -135,5 +138,5 @@ async function logout() {
 }
 
 export function useAuth() {
-  return { user: readonly(user), canViewAdmin, setUser, restoreSession, logout }
+	return { user: readonly(user), canViewAdmin, canManageUsers, setUser, restoreSession, logout }
 }

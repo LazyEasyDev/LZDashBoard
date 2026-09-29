@@ -49,16 +49,27 @@ async function routerWithGuard() {
 }
 
 describe('API requests', () => {
-  it('uses the same-origin API prefix and credentialed JSON POSTs', async () => {
+  it('uses the configured API origin and credentialed JSON POSTs', async () => {
     fetchMock.mockResolvedValue(jsonResponse({ message: 'ok' }))
     await expect(auth.apiRequest('/user/logout', {})).resolves.toEqual({ message: 'ok' })
-    expect(fetchMock).toHaveBeenCalledWith('/api/user/logout', expect.objectContaining({
+    expect(fetchMock).toHaveBeenCalledWith('https://localhost/user/logout', expect.objectContaining({
       method: 'POST',
       credentials: 'include',
       cache: 'no-store',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
       signal: expect.any(AbortSignal)
+    }))
+  })
+
+  it('uses credentialed POST requests for resource updates', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ id: 7 }))
+    await expect(auth.apiRequest('/admin/users/7', { name: 'Updated' })).resolves.toEqual({ id: 7 })
+    expect(fetchMock).toHaveBeenCalledWith('https://localhost/admin/users/7', expect.objectContaining({
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{"name":"Updated"}'
     }))
   })
 
@@ -172,7 +183,7 @@ describe('memory-only session', () => {
     await Promise.all([session.restoreSession(), session.restoreSession()])
     await session.restoreSession()
     expect(fetchMock).toHaveBeenCalledTimes(1)
-    expect(fetchMock).toHaveBeenCalledWith('/api/user', expect.objectContaining({ method: 'GET', credentials: 'include' }))
+    expect(fetchMock).toHaveBeenCalledWith('https://localhost/user', expect.objectContaining({ method: 'GET', credentials: 'include' }))
     expect(session.user.value?.email).toBe(profile.email)
     expect(session.user.value).not.toHaveProperty('api_token')
     expect(session.user.value).not.toHaveProperty('password')
@@ -210,6 +221,18 @@ describe('memory-only session', () => {
     expect(session.canViewAdmin.value).toBe(true)
   })
 
+  it.each([
+    ['["admin"]', true],
+    ['["user","admin"]', true],
+    ['["viewall"]', false],
+    ['["user","viewall"]', false],
+    ['["ADMIN"]', false]
+  ])('limits user management for %s to admin=%s', (access, expected) => {
+    const session = auth.useAuth()
+    session.setUser({ ...profile, access })
+    expect(session.canManageUsers.value).toBe(expected)
+  })
+
   it.each(['[]', '["ADMIN"]', '["not-admin"]', '"admin"', '{"admin":true}', 'invalid', 'null'])('denies malformed or insufficient access %s', access => {
     const session = auth.useAuth()
     session.setUser({ ...profile, access })
@@ -228,7 +251,7 @@ describe('memory-only session', () => {
     expect(session.canViewAdmin.value).toBe(false)
     expect(cookieWrites).toContain('preference=; Max-Age=0; Path=/; Secure')
     expect(cookieWrites).toContain('api_token=; Max-Age=0; Path=/settings; Domain=.example.test; Secure')
-    expect(fetchMock).toHaveBeenCalledWith('/api/user/logout', expect.objectContaining({ body: '{}' }))
+    expect(fetchMock).toHaveBeenCalledWith('https://localhost/user/logout', expect.objectContaining({ body: '{}' }))
   })
 })
 

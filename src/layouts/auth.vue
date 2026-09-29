@@ -16,7 +16,7 @@ import AppNavbar from '../components/AppNavbar.vue'
             class="absolute inset-0 m-auto h-auto w-[calc(100%-4rem)] max-h-[calc(100%-4rem)] scale-80 object-contain dark:opacity-30"
           >
         </div>
-        <div class="relative min-w-0 px-5 pt-20 pb-5 sm:px-6 sm:pt-16 sm:pb-10 lg:flex lg:w-1/2 lg:flex-col lg:justify-center lg:px-10">
+        <div class="relative min-w-0 bg-white px-5 pt-20 pb-5 sm:px-6 sm:pt-16 sm:pb-10 lg:flex lg:w-1/2 lg:flex-col lg:justify-center lg:px-10 dark:bg-transparent">
           <RouterView />
         </div>
       </div>

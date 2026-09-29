@@ -238,6 +238,7 @@ onMounted(refreshCaptcha)
         <div class="col-span-2 row-start-2 mt-1 min-w-0 w-full">
           <UInput
             v-model="state.name"
+            variant="soft"
             :placeholder="t('namePlaceholder')"
             autocomplete="name"
             :disabled="busy"
@@ -257,6 +258,7 @@ onMounted(refreshCaptcha)
         <div class="col-span-2 row-start-2 mt-1 min-w-0 w-full">
           <UInput
             v-model.trim="state.email"
+            variant="soft"
             :placeholder="t('emailPlaceholder')"
             type="email"
             autocomplete="username"
@@ -278,6 +280,7 @@ onMounted(refreshCaptcha)
         <div class="col-span-2 row-start-2 mt-1 min-w-0 w-full">
           <UInput
             v-model="state.password"
+            variant="soft"
             :placeholder="t(isLogin ? 'passwordPlaceholder' : 'newPasswordPlaceholder')"
             :type="showPassword ? 'text' : 'password'"
             :autocomplete="isLogin ? 'current-password' : 'new-password'"
@@ -314,6 +317,7 @@ onMounted(refreshCaptcha)
         <div class="col-span-2 row-start-2 mt-1 min-w-0 w-full">
           <UInput
             v-model="state.confirmation"
+            variant="soft"
             :placeholder="t('confirmPasswordPlaceholder')"
             :type="showPassword ? 'text' : 'password'"
             autocomplete="new-password"
@@ -336,6 +340,7 @@ onMounted(refreshCaptcha)
           <div class="grid grid-cols-[minmax(0,1fr)_6rem_2rem] items-center gap-2">
             <UInput
               v-model="state.captcha"
+              variant="soft"
               :placeholder="t('captchaPlaceholder')"
               :aria-label="t('captcha')"
               :ui="{ base: 'font-mono' }"
@@ -391,6 +396,7 @@ onMounted(refreshCaptcha)
         <div class="col-span-2 row-start-2 mt-1 grid min-w-0 w-full grid-cols-[minmax(0,1fr)_6rem_2rem] items-center gap-2">
           <UInput
             v-model.trim="state.email_code"
+            variant="soft"
             :placeholder="t('emailCodePlaceholder')"
             :ui="{ base: 'font-mono' }"
             inputmode="numeric"

@@ -45,13 +45,6 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/settings/change-password': RouteRecordInfo<
-      '/settings/change-password',
-      '/settings/change-password',
-      Record<never, never>,
-      Record<never, never>,
-      | never
-    >,
     '/settings/exit': RouteRecordInfo<
       '/settings/exit',
       '/settings/exit',
@@ -113,14 +106,6 @@ declare module 'vue-router/auto-routes' {
     'src/pages/admin/users.vue': {
       routes:
         | '/admin/users'
-      views:
-        | never
-      pathParamNames:
-        | never
-    }
-    'src/pages/settings/change-password.vue': {
-      routes:
-        | '/settings/change-password'
       views:
         | never
       pathParamNames:
