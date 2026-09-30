@@ -1,18 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 228 48" width="228" height="48">
   <g fill="none" stroke="#00a6f4">
-    <g stroke-width="2.75" stroke-linejoin="miter">
+    <g stroke-width="2" stroke-linejoin="miter">
       <path d="M25 3h10l-8.5 7h10M10 9h9l-8.5 7h9" />
       <circle cx="12" cy="26" r="4.2" />
       <path d="M5 35v-1.5a4.2 4.2 0 0 1 4.2-4.2h5.6a4.2 4.2 0 0 1 4.2 4.2V35M25.5 19h14.7v10.5H25.5zM32.5 29.5V35M1 36h43M5 36v8.4h33V36" />
     </g>
-    <g stroke-width="3">
+    <g stroke-width="2.25">
       <rect x="57" y="18.275" width="26" height="26" rx="3" />
       <rect x="92" y="18.275" width="26" height="26" rx="3" />
       <rect x="127" y="18.275" width="26" height="26" rx="3" />
       <rect x="162" y="18.275" width="26" height="26" rx="3" />
       <rect x="197" y="18.275" width="26" height="26" rx="3" />
     </g>
-    <g stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M66 25.275v12h8M100 25.275h10l-10 12h10M135 37.275l4-12h2l4 12M136.5 33.275h7" />
       <path d="M170.75 37.275v-12h5a3.5 3.5 0 0 1 0 7h-5M205.75 37.275v-12h5a3.5 3.5 0 0 1 0 7h-5" />
     </g>

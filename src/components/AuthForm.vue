@@ -167,9 +167,12 @@ onMounted(refreshCaptcha)
 </script>
 
 <template>
-  <section class="min-w-0 space-y-6">
-    <h1 class="absolute top-0 right-0 m-0 max-w-full text-right text-lg leading-6 font-medium text-dimmed/50 [overflow-wrap:anywhere]" dir="auto">
-      <span class="inline-block max-w-full rounded-bl-lg bg-black/[0.03] px-4 py-2 uppercase dark:bg-white/5">
+  <section
+    class="flex min-w-0 flex-col gap-6"
+    :class="{ 'mt-4 pb-16': isLogin, 'pb-2': mode === 'reset' }"
+  >
+    <h1 class="absolute right-0 bottom-0 m-0 max-w-full text-right text-sm leading-6 font-medium text-dimmed/50 [overflow-wrap:anywhere]" dir="auto">
+      <span class="inline-block max-w-full rounded-tl-lg bg-black/[0.03] px-4 py-2 uppercase dark:bg-white/5">
         {{ t(titleKey) }}
       </span>
     </h1>

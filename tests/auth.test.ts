@@ -39,10 +39,18 @@ async function routerWithGuard() {
   const { authGuard } = await import('../src/authGuard')
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: ['/', '/user/login', '/user/register', '/user/reset-password', '/admin/users', '/admin/dbkv', '/settings/exit'].map(path => ({
-      path,
-      component: { render: () => null }
-    }))
+    routes: [
+      ...['/', '/user/login', '/user/register', '/user/reset-password', '/admin/users', '/admin/dbkv', '/settings/exit'].map(path => ({
+        path,
+        component: { render: () => null }
+      })),
+      {
+        path: '/:path(.*)*',
+        name: 'not-found',
+        meta: { layout: false },
+        component: { render: () => null }
+      }
+    ]
   })
   router.beforeEach(authGuard)
   return router
@@ -348,10 +356,40 @@ describe('redirect safety', () => {
 })
 
 describe('route guard', () => {
+  it.each(['/admin/users/asdfasfd', '/missing-page', '/user/missing/deep?from=test#section'])('shows the public not-found route for %s without restoring cookies', async path => {
+    fetchMock.mockRejectedValue(new TypeError('offline'))
+    const router = await routerWithGuard()
+    await router.push(path)
+    expect(router.currentRoute.value.name).toBe('not-found')
+    expect(router.currentRoute.value.fullPath).toBe(path)
+    expect(router.currentRoute.value.meta.layout).toBe(false)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it.each(['[]', '["admin"]'])('keeps an unknown admin path on the not-found page for access %s', async access => {
+    auth.useAuth().setUser({ ...profile, access })
+    const router = await routerWithGuard()
+    await router.push('/admin/users/asdfasfd')
+    expect(router.currentRoute.value.name).toBe('not-found')
+    expect(router.currentRoute.value.path).toBe('/admin/users/asdfasfd')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('still protects real admin routes when leaving the not-found page', async () => {
+    fetchMock.mockResolvedValue(new Response(null, { status: 401 }))
+    const router = await routerWithGuard()
+    await router.push('/admin/users/asdfasfd')
+    await router.push('/admin/users')
+    expect(router.currentRoute.value.path).toBe('/user/login')
+    expect(router.currentRoute.value.query.redirect).toBe('/admin/users')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
   it.each(['/user/login', '/user/register', '/user/reset-password', '/settings/exit'])('allows public auth action %s without restoring cookies', async path => {
     const router = await routerWithGuard()
     await router.push(path)
     expect(router.currentRoute.value.path).toBe(path)
+    expect(router.currentRoute.value.name).not.toBe('not-found')
     expect(fetchMock).not.toHaveBeenCalled()
   })
 

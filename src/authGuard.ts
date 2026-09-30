@@ -5,7 +5,7 @@ const publicPaths = new Set(['/user/login', '/user/register', '/user/reset-passw
 
 export const authGuard: NavigationGuard = async to => {
   const path = to.path.replace(/\/+$/, '').toLowerCase() || '/'
-  if (publicPaths.has(path)) return true
+  if (to.name === 'not-found' || publicPaths.has(path)) return true
 
   const { user, restoreSession, canViewAdmin } = useAuth()
   try {

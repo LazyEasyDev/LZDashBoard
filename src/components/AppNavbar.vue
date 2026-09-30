@@ -7,10 +7,11 @@ import { languageConfig } from '../i18n/locales'
 import type { TranslationKey } from '../i18n/locales'
 import { useAppTheme } from '../composables/useAppTheme'
 
-withDefaults(defineProps<{ titleKey?: TranslationKey, showSidebar?: boolean, showLogo?: boolean }>(), {
+withDefaults(defineProps<{ titleKey?: TranslationKey, showSidebar?: boolean, showLogo?: boolean, embedded?: boolean }>(), {
   titleKey: undefined,
   showSidebar: true,
-  showLogo: false
+  showLogo: false,
+  embedded: false
 })
 
 const { locale, t } = useI18n()
@@ -31,7 +32,7 @@ const currentLanguage = computed(() => languageConfig.languages.find(language =>
     dir="ltr"
     :toggle="showSidebar"
     :ui="{
-      root: 'gap-2',
+      root: embedded ? 'h-auto gap-2 border-0 px-0 sm:px-0' : 'gap-2',
       left: 'min-w-0 flex-1',
       title: 'min-w-0 whitespace-normal break-words text-base leading-tight',
       right: 'ml-auto shrink-0 gap-1 sm:gap-2'
@@ -45,7 +46,8 @@ const currentLanguage = computed(() => languageConfig.languages.find(language =>
           alt="LZApp"
           width="228"
           height="48"
-          class="h-auto w-32 sm:w-36"
+          class="h-auto sm:w-36"
+          :class="embedded ? 'w-24' : 'w-32'"
         >
       </RouterLink>
     </template>
@@ -69,7 +71,8 @@ const currentLanguage = computed(() => languageConfig.languages.find(language =>
           size="sm"
           :aria-label="`${t('language')}: ${currentLanguage.label}`"
           :title="t('language')"
-          class="h-8 w-24 justify-between sm:w-36"
+          class="h-8 justify-between sm:w-36"
+          :class="embedded ? 'w-20' : 'w-24'"
         >
           <span class="sm:hidden">{{ currentLanguage.code.split('-')[0]?.toUpperCase() }}</span>
           <bdi :lang="currentLanguage.code" class="hidden min-w-0 truncate sm:block">{{ currentLanguage.label }}</bdi>

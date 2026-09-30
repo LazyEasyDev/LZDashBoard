@@ -38,6 +38,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    'not-found': RouteRecordInfo<
+      'not-found',
+      '/:path(.*)',
+      { path: ParamValue<true> },
+      { path: ParamValue<false> },
+      | never
+    >,
     '/admin/dbkv': RouteRecordInfo<
       '/admin/dbkv',
       '/admin/dbkv',
@@ -109,6 +116,14 @@ declare module 'vue-router/auto-routes' {
         | never
       pathParamNames:
         | never
+    }
+    'src/pages/[...path].vue': {
+      routes:
+        | 'not-found'
+      views:
+        | never
+      pathParamNames:
+        | 'path'
     }
     'src/pages/admin/dbkv.vue': {
       routes:
