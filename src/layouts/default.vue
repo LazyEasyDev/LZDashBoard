@@ -50,6 +50,13 @@ const links = computed(() => [{
     onSelect: () => {
       open.value = false
     }
+  }, {
+    label: t('dbkv'),
+    icon: 'i-lucide-database',
+    to: '/admin/dbkv',
+    onSelect: () => {
+      open.value = false
+    }
   }]
 }] : []), {
   label: t('settings'),

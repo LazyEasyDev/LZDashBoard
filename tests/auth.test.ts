@@ -39,7 +39,7 @@ async function routerWithGuard() {
   const { authGuard } = await import('../src/authGuard')
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: ['/', '/user/login', '/user/register', '/user/reset-password', '/admin/users', '/settings/exit'].map(path => ({
+    routes: ['/', '/user/login', '/user/register', '/user/reset-password', '/admin/users', '/admin/dbkv', '/settings/exit'].map(path => ({
       path,
       component: { render: () => null }
     }))
@@ -62,14 +62,35 @@ describe('API requests', () => {
     }))
   })
 
-  it('uses credentialed POST requests for resource updates', async () => {
+  it('uses credentialed POST requests with the user ID in the update body', async () => {
     fetchMock.mockResolvedValue(jsonResponse({ id: 7 }))
-    await expect(auth.apiRequest('/admin/users/7', { name: 'Updated' })).resolves.toEqual({ id: 7 })
-    expect(fetchMock).toHaveBeenCalledWith('https://localhost/admin/users/7', expect.objectContaining({
+    await expect(auth.apiRequest('/admin/users/update', { id: 7, name: 'Updated' })).resolves.toEqual({ id: 7 })
+    expect(fetchMock).toHaveBeenCalledWith('https://localhost/admin/users/update', expect.objectContaining({
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: '{"name":"Updated"}'
+      body: '{"id":7,"name":"Updated"}'
+    }))
+  })
+
+  it('lists users with pagination and filters on the list endpoint', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ items: [], total: 0 }))
+    await auth.apiRequest('/admin/users/list?page=2&page_size=20&access=user')
+    expect(fetchMock).toHaveBeenCalledWith('https://localhost/admin/users/list?page=2&page_size=20&access=user', expect.objectContaining({
+      method: 'GET',
+      credentials: 'include',
+      body: undefined
+    }))
+  })
+
+  it('creates users on the create endpoint without an ID', async () => {
+    const body = { name: 'Member', email: 'member@example.test', password: '12345678', access: ['user'] }
+    fetchMock.mockResolvedValue(jsonResponse({ id: 7 }, 201))
+    await expect(auth.apiRequest('/admin/users/create', body)).resolves.toEqual({ id: 7 })
+    expect(fetchMock).toHaveBeenCalledWith('https://localhost/admin/users/create', expect.objectContaining({
+      method: 'POST',
+      credentials: 'include',
+      body: JSON.stringify(body)
     }))
   })
 
@@ -82,7 +103,7 @@ describe('API requests', () => {
 
   it.each([
     [{ detail: 'Invalid code', status: 422, errors: [] }, 'Invalid code'],
-    [{ message: 'Legacy error', detail: 'Huma error' }, 'Legacy error'],
+    [{ message: 'Legacy error', detail: 'Huma error' }, 'Huma error'],
     [{ message: '', detail: 'Huma error' }, 'Huma error'],
     [{ message: 123, detail: 'Huma error' }, 'Huma error'],
     [{ detail: 123, errors: [] }, ''],
@@ -92,6 +113,62 @@ describe('API requests', () => {
     const request = auth.apiRequest('/user/login', {})
     await expect(request).rejects.toBeInstanceOf(auth.ApiError)
     await expect(request).rejects.toMatchObject({ status: 400, message })
+  })
+
+  it.each([
+    [{ title: 'Unauthorized', detail: 'invalid email or password' }, 'Unauthorized', 'invalid email or password'],
+    [{ title: 'Service Unavailable', detail: 'Please contact support.' }, 'Service Unavailable', 'Please contact support.'],
+    [{ title: 'Forbidden' }, 'Forbidden', ''],
+    [{ detail: 'Custom API error' }, '', 'Custom API error'],
+    [{ title: 123, detail: ['invalid'] }, '', ''],
+    [null, '', '']
+  ])('preserves safe problem title and detail from %j', async (body, title, detail) => {
+    fetchMock.mockResolvedValue(jsonResponse(body, 400))
+    await expect(auth.apiRequest('/user/login', {})).rejects.toMatchObject({
+      status: 400,
+      title,
+      detail,
+      message: detail || title
+    })
+  })
+})
+
+describe('API error alerts', () => {
+  it.each([
+    ['Unauthorized', 'invalid email or password'],
+    ['Service Unavailable', 'An unmapped backend error'],
+    ['Forbidden', ''],
+    ['', 'Detail without a title'],
+    ['<b>Unauthorized</b>', '<script>alert(1)</script>']
+  ])('shows the returned title %j and detail %j without replacing them', async (title, detail) => {
+    const { apiErrorContent } = await import('../src/components/apiErrors')
+    const { authErrorKey } = await import('../src/components/authErrors')
+    fetchMock.mockResolvedValue(jsonResponse({ title, detail }, 401))
+    const error = await auth.apiRequest('/user/login', {}).catch((error: unknown) => error)
+    expect(apiErrorContent(error, authErrorKey(error))).toEqual({
+      title: title || undefined,
+      description: detail || undefined
+    })
+  })
+
+  it.each([
+    [429, 'tooManyRequests'],
+    [401, 'invalidCredentials'],
+    [422, 'validationFailed'],
+    [502, 'requestFailed']
+  ])('keeps the status fallback for an empty API error with status %i', async (status, fallback) => {
+    const { apiErrorContent } = await import('../src/components/apiErrors')
+    const { authErrorKey } = await import('../src/components/authErrors')
+    const error = new auth.ApiError(status, '')
+    expect(apiErrorContent(error, authErrorKey(error))).toEqual({ description: fallback })
+  })
+
+  it('keeps localized network and page-specific fallbacks', async () => {
+    const { apiErrorContent } = await import('../src/components/apiErrors')
+    const { authErrorKey } = await import('../src/components/authErrors')
+    const error = new TypeError('Failed to fetch')
+    expect(apiErrorContent(error, authErrorKey(error))).toEqual({ description: 'networkError' })
+    expect(apiErrorContent(error, 'Unable to load users')).toEqual({ description: 'Unable to load users' })
   })
 })
 
@@ -286,18 +363,20 @@ describe('route guard', () => {
     expect(router.currentRoute.value.query.redirect).toBe('/admin/users?sort=email')
   })
 
-  it.each(['/admin/users', '/Admin/users'])('blocks direct admin navigation to %s for regular users', async path => {
+  it.each(['/admin/users', '/Admin/users', '/admin/dbkv', '/Admin/dbkv'])('blocks direct admin navigation to %s for regular users', async path => {
     auth.useAuth().setUser(profile)
     const router = await routerWithGuard()
     await router.push(path)
     expect(router.currentRoute.value.path).toBe('/')
   })
 
-  it.each(['admin', 'viewall'])('allows admin routes for %s', async access => {
-    fetchMock.mockResolvedValue(jsonResponse({ ...profile, access: JSON.stringify([access]) }))
-    const router = await routerWithGuard()
-    await router.push('/admin/users')
-    expect(router.currentRoute.value.path).toBe('/admin/users')
+  describe.each(['/admin/users', '/admin/dbkv'])('%s access', path => {
+    it.each(['admin', 'viewall'])('allows admin routes for %s', async access => {
+      fetchMock.mockResolvedValue(jsonResponse({ ...profile, access: JSON.stringify([access]) }))
+      const router = await routerWithGuard()
+      await router.push(path)
+      expect(router.currentRoute.value.path).toBe(path)
+    })
   })
 
   it('redirects a failed restore to a retryable login state', async () => {

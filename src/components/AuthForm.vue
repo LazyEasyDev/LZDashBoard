@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, useTemplateRef, watch } from 'vue'
+import { computed, onMounted, reactive, ref, shallowRef, useTemplateRef, watch } from 'vue'
 import { useNow } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import AuthErrorHint from './AuthErrorHint.vue'
 import { createAuthSchemas } from './authSchema'
 import { authErrorKey } from './authErrors'
+import { apiErrorContent } from './apiErrors'
 import { apiRequest, safeLocalRedirect, useAuth } from '../composables/useAuth'
 import type { SessionUser } from '../composables/useAuth'
-import type { TranslationKey } from '../i18n/locales'
 
 const props = defineProps<{ mode: 'login' | 'register' | 'reset' }>()
 const { locale, t } = useI18n()
@@ -41,9 +41,11 @@ const submitting = ref(false)
 const sendingCode = ref(false)
 const retryingLogout = ref(false)
 const busy = computed(() => submitting.value || sendingCode.value || retryingLogout.value)
-const errorKey = ref<TranslationKey | ''>('')
+const requestError = shallowRef<unknown>(null)
 const emailCodeSent = ref(false)
-const errorMessage = computed(() => errorKey.value ? t(errorKey.value) : '')
+const errorContent = computed(() => requestError.value === null
+  ? null
+  : apiErrorContent(requestError.value, t(authErrorKey(requestError.value))))
 const showPassword = ref(false)
 const now = useNow({ interval: 1000 })
 const cooldownUntil = ref(0)
@@ -86,7 +88,7 @@ function captchaImageFailed() {
 
 async function sendEmailCode() {
   if (busy.value || cooldown.value || !captchaId.value || captchaLoading.value) return
-  errorKey.value = ''
+  requestError.value = null
   emailCodeSent.value = false
   const validated = schemas.value.emailCode.safeParse({ email: state.email, captcha: state.captcha })
   if (!validated.success) {
@@ -105,7 +107,7 @@ async function sendEmailCode() {
     cooldownUntil.value = now.value.getTime() + 30_000
     emailCodeSent.value = true
   } catch (error) {
-    errorKey.value = authErrorKey(error)
+    requestError.value = error
   } finally {
     await refreshCaptcha()
     sendingCode.value = false
@@ -115,7 +117,7 @@ async function sendEmailCode() {
 async function submit() {
   if (busy.value || !captchaId.value || captchaLoading.value) return
   submitting.value = true
-  errorKey.value = ''
+  requestError.value = null
   emailCodeSent.value = false
   let destination: string | undefined
   const body = {
@@ -140,7 +142,7 @@ async function submit() {
     state.confirmation = ''
     state.email_code = ''
   } catch (error) {
-    errorKey.value = authErrorKey(error)
+    requestError.value = error
   } finally {
     await refreshCaptcha()
     submitting.value = false
@@ -150,12 +152,12 @@ async function submit() {
 
 async function retryLogout() {
   retryingLogout.value = true
-  errorKey.value = ''
+  requestError.value = null
   try {
     await logout()
     await router.replace('/user/login')
   } catch (error) {
-    errorKey.value = authErrorKey(error)
+    requestError.value = error
   } finally {
     retryingLogout.value = false
   }
@@ -206,11 +208,13 @@ onMounted(refreshCaptcha)
       </UButton>
     </div>
     <UAlert
-      v-if="errorMessage"
+      v-if="errorContent"
       color="error"
       variant="subtle"
       icon="i-lucide-circle-alert"
-      :description="errorMessage"
+      :title="errorContent.title"
+      :description="errorContent.description"
+      :ui="{ title: 'whitespace-pre-wrap [overflow-wrap:anywhere]', description: 'whitespace-pre-wrap [overflow-wrap:anywhere]' }"
       role="alert"
     />
     <UAlert

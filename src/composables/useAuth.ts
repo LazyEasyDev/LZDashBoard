@@ -11,8 +11,8 @@ export interface SessionUser {
 }
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
-    super(message)
+  constructor(public status: number, public detail: string, public title = '') {
+    super(detail || title)
   }
 }
 
@@ -30,12 +30,15 @@ export async function apiRequest<Response>(path: string, body?: unknown): Promis
   })
   const data: unknown = await response.json().catch(() => null)
   if (!response.ok) {
-    const message = data && typeof data === 'object' && 'message' in data && typeof data.message === 'string' && data.message
-      ? data.message
-      : data && typeof data === 'object' && 'detail' in data && typeof data.detail === 'string'
-        ? data.detail
+    const title = data && typeof data === 'object' && 'title' in data && typeof data.title === 'string'
+      ? data.title
+      : ''
+    const detail = data && typeof data === 'object' && 'detail' in data && typeof data.detail === 'string' && data.detail
+      ? data.detail
+      : data && typeof data === 'object' && 'message' in data && typeof data.message === 'string'
+        ? data.message
         : ''
-    throw new ApiError(response.status, message)
+    throw new ApiError(response.status, detail, title)
   }
   return data as Response
 }

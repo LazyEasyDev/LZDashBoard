@@ -3,7 +3,9 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppNavbar from '../../components/AppNavbar.vue'
-import { ApiError, apiRequest, useAuth } from '../../composables/useAuth'
+import { apiErrorContent } from '../../components/apiErrors'
+import type { ApiErrorContent } from '../../components/apiErrors'
+import { apiRequest, useAuth } from '../../composables/useAuth'
 
 interface UserRecord {
   id: number
@@ -48,10 +50,10 @@ const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 const loading = ref(false)
-const loadError = ref('')
+const loadError = ref<ApiErrorContent | null>(null)
 const editorOpen = ref(false)
 const saving = ref(false)
-const formError = ref('')
+const formError = ref<ApiErrorContent | null>(null)
 const form = reactive<UserFormState>(emptyForm())
 const pageSizeOptions = [10, 20, 50].map(value => ({ label: String(value), value }))
 let requestVersion = 0
@@ -83,7 +85,7 @@ function emptyForm(): UserFormState {
 
 function resetForm(value: UserFormState) {
   Object.assign(form, value)
-  formError.value = ''
+  formError.value = null
 }
 
 function openCreate() {
@@ -115,22 +117,17 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium', timeStyle: 'short' }).format(date)
 }
 
-function errorMessage(error: unknown, fallback: string) {
-  if (error instanceof ApiError && error.message) return error.message
-  return fallback
-}
-
 async function loadUsers() {
   const version = ++requestVersion
   loading.value = true
-  loadError.value = ''
+  loadError.value = null
   const query = new URLSearchParams({ page: String(page.value), page_size: String(pageSize.value) })
   if (appliedID.value) query.set('id', appliedID.value)
   if (appliedName.value) query.set('name', appliedName.value)
   if (appliedEmail.value) query.set('email', appliedEmail.value)
   if (appliedAccess.value !== allAccessFilter) query.set('access', appliedAccess.value)
   try {
-    const response = await apiRequest<UsersResponse>(`/admin/users?${query}`)
+    const response = await apiRequest<UsersResponse>(`/admin/users/list?${query}`)
     if (version !== requestVersion) return
     users.value = response.items
     accessOptions.value = response.access_options
@@ -141,7 +138,7 @@ async function loadUsers() {
     if (version !== requestVersion) return
     users.value = []
     total.value = 0
-    loadError.value = errorMessage(error, t('usersLoadError'))
+    loadError.value = apiErrorContent(error, t('usersLoadError'))
   } finally {
     if (version === requestVersion) loading.value = false
   }
@@ -158,11 +155,11 @@ function applyFilters() {
 
 async function saveUser() {
   if (!canManageUsers.value || saving.value) return
-  formError.value = ''
+  formError.value = null
   const passwordLength = Array.from(form.password).length
   const passwordBytes = new TextEncoder().encode(form.password).length
   if ((!editing.value || form.password !== '') && (passwordLength < 8 || passwordBytes > 72)) {
-    formError.value = t('usersInvalidPassword')
+    formError.value = { description: t('usersInvalidPassword') }
     return
   }
   saving.value = true
@@ -174,13 +171,13 @@ async function saveUser() {
       password: form.password,
       access: form.access
     }
-    if (form.id === null) await apiRequest<UserRecord>('/admin/users', body)
-    else await apiRequest<UserRecord>(`/admin/users/${form.id}`, body)
+    if (form.id === null) await apiRequest<UserRecord>('/admin/users/create', body)
+    else await apiRequest<UserRecord>('/admin/users/update', { ...body, id: form.id })
     editorOpen.value = false
     toast.add({ title: t(wasEditing ? 'usersUpdatedSuccess' : 'usersCreatedSuccess'), color: 'success' })
     await loadUsers()
   } catch (error) {
-    formError.value = errorMessage(error, t('usersWriteError'))
+    formError.value = apiErrorContent(error, t('usersWriteError'))
   } finally {
     saving.value = false
   }
@@ -211,7 +208,10 @@ void loadUsers()
           color="error"
           variant="subtle"
           icon="i-lucide-circle-alert"
-          :description="loadError"
+          :title="loadError.title"
+          :description="loadError.description"
+          :ui="{ title: 'whitespace-pre-wrap [overflow-wrap:anywhere]', description: 'whitespace-pre-wrap [overflow-wrap:anywhere]' }"
+          role="alert"
         />
 
         <div class="flex flex-col overflow-hidden rounded-md border border-default">
@@ -253,7 +253,7 @@ void loadUsers()
               />
               <UButton
                 type="submit"
-                icon="i-lucide-search"
+                icon="i-lucide-funnel"
                 color="neutral"
                 variant="soft"
                 :loading="loading"
@@ -375,7 +375,10 @@ void loadUsers()
               color="error"
               variant="subtle"
               icon="i-lucide-circle-alert"
-              :description="formError"
+              :title="formError.title"
+              :description="formError.description"
+              :ui="{ title: 'whitespace-pre-wrap [overflow-wrap:anywhere]', description: 'whitespace-pre-wrap [overflow-wrap:anywhere]' }"
+              role="alert"
             />
             <UFormField :label="t('usersNameOptional')">
               <UInput v-model="form.name" maxlength="100" class="w-full" />
@@ -433,6 +436,7 @@ void loadUsers()
               type="submit"
               form="user-editor-form"
               icon="i-lucide-save"
+              variant="soft"
               :loading="saving"
             >
               {{ saving ? t('usersSaving') : t('usersSave') }}

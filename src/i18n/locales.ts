@@ -1,5 +1,6 @@
 import { authMessages } from './auth'
 import { adminUsersMessages } from './adminUsers'
+import { adminDBKVMessages } from './adminDBKV'
 
 export const languageConfig = {
   defaultLanguage: 'en',
@@ -19,6 +20,7 @@ export type LanguageCode = typeof languageConfig.languages[number]['code']
 export const english = {
   ...authMessages.en,
   ...adminUsersMessages.en,
+  ...adminDBKVMessages.en,
   home: 'Home',
   admin: 'Admin',
   users: 'Users',
@@ -45,6 +47,7 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
   'zh-CN': {
     ...authMessages['zh-CN'],
     ...adminUsersMessages['zh-CN'],
+    ...adminDBKVMessages['zh-CN'],
     home: '首页',
     admin: '管理',
     users: '用户',
@@ -66,6 +69,7 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
   es: {
     ...authMessages.es,
     ...adminUsersMessages.es,
+    ...adminDBKVMessages.es,
     home: 'Inicio',
     admin: 'Administración',
     users: 'Usuarios',
@@ -87,6 +91,7 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
   hi: {
     ...authMessages.hi,
     ...adminUsersMessages.hi,
+    ...adminDBKVMessages.hi,
     home: 'होम',
     admin: 'प्रशासन',
     users: 'उपयोगकर्ता',
@@ -108,6 +113,7 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
   fr: {
     ...authMessages.fr,
     ...adminUsersMessages.fr,
+    ...adminDBKVMessages.fr,
     home: 'Accueil',
     admin: 'Administration',
     users: 'Utilisateurs',
@@ -129,6 +135,7 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
   ar: {
     ...authMessages.ar,
     ...adminUsersMessages.ar,
+    ...adminDBKVMessages.ar,
     home: 'الرئيسية',
     admin: 'الإدارة',
     users: 'المستخدمون',

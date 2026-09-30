@@ -96,6 +96,17 @@ Run `pnpm typecheck` for Vue types, `pnpm exec tsc -p tsconfig.node.json` for
 Vite config types, and `pnpm lint` for source linting. Existing proxy-based tests
 have not been updated for direct API requests.
 
+## Admin Users API
+
+The dashboard page remains `/admin/users`. Its API requests use:
+
+- `GET /admin/users/list` with the existing filters, `page`, and `page_size` query parameters.
+- `POST /admin/users/create` with `name`, `email`, `password`, and `access` in the JSON body.
+- `POST /admin/users/update` with the same fields plus a required positive `id` in the JSON body. An empty password keeps the current password.
+
+Listing requires `admin` or `viewall`; creating and updating require `admin`.
+The old API routes `/admin/users` and `/admin/users/{id}` are not supported.
+
 ## Sidebar Width
 
 The sidebar defaults to 15rem on ordinary desktops and 20rem at viewport widths
