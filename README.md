@@ -107,6 +107,45 @@ The dashboard page remains `/admin/users`. Its API requests use:
 Listing requires `admin` or `viewall`; creating and updating require `admin`.
 The old API routes `/admin/users` and `/admin/users/{id}` are not supported.
 
+## Referrals
+
+The lower-left account menu opens the referral-link generator. A user can generate
+links only for their authenticated account. Opening the dialog generates a link
+with a random five-letter lowercase ASCII tag. There is no tag input; the New
+link action generates another random channel. Incoming signed referrals may
+still omit the tag; a nonempty tag must contain exactly five lowercase letters.
+
+The registration URL uses `?ref=<token>&reference_channel=<tag>`. The visible
+`reference_channel` parameter is only a label: editing or removing it does not
+change attribution. The signed tag inside `ref` is authoritative.
+Tokens contain two separately
+Base64URL-encoded fields (user ID and tag), followed by an HMAC signature over the
+exact dot-separated encoded fields. Every token is framed with `A` and `Z`.
+Keep the backend `HMACKey` persistent and identical across application instances;
+changing it invalidates previously shared links. Tokens are signed, not encrypted.
+
+Before authentication redirects, the dashboard validates a new referral through
+`GET /user/ref` and stores valid tokens in a host-only `ref` cookie with a 400-day
+maximum age, subject to browser limits. Later valid links overwrite it; missing
+or invalid links leave it unchanged. Registration submits the remembered token
+in its JSON body. Logout clears the referral cookie with all other cookies.
+
+The backend verifies the signature, canonical user ID, tag format, and current
+existence of the referring user. The database stores only plain `userID:tag`,
+such as `123:email` or `123:`. Missing or invalid referrals, including failed
+referrer lookups, are discarded without preventing registration. Admin users
+can search `123` for that referrer, `email` for that tag, or `123:email` for the
+complete value.
+
+`reg_ip` is assigned by the backend during public registration and is shown only
+in admin responses. Direct EC2 connections use the socket address. For an ALB
+using `X-Forwarded-For` append mode, configure `HTTPConfig.TrustedProxyCIDRs` with
+the trusted load-balancer subnet CIDRs and restrict the EC2 application port to
+the load balancer's security group. The backend uses the last appended address
+only when the socket peer is trusted; otherwise it ignores forwarded headers.
+Leave trusted proxies empty for direct connections or an NLB that preserves
+client IP addresses.
+
 ## Sidebar Width
 
 The sidebar defaults to 15rem on ordinary desktops and 20rem at viewport widths

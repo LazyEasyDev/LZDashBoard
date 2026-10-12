@@ -12,6 +12,8 @@ interface UserRecord {
   name: string | null
   email: string
   access: string[]
+  ref: string
+  reg_ip: string
   created_at: string
   updated_at: string
 }
@@ -41,9 +43,13 @@ const accessOptions = ref(['user', 'admin', 'viewall', 'am'])
 const idSearch = ref('')
 const nameSearch = ref('')
 const emailSearch = ref('')
+const refSearch = ref('')
+const regIPSearch = ref('')
 const appliedID = ref('')
 const appliedName = ref('')
 const appliedEmail = ref('')
+const appliedRef = ref('')
+const appliedRegIP = ref('')
 const accessFilter = ref(allAccessFilter)
 const appliedAccess = ref(allAccessFilter)
 const page = ref(1)
@@ -64,6 +70,8 @@ const columns = computed<TableColumn<UserRecord>[]>(() => {
     { accessorKey: 'name', header: t('usersName') },
     { accessorKey: 'email', header: t('usersEmail') },
     { accessorKey: 'access', header: t('usersAccess') },
+    { accessorKey: 'ref', header: t('usersRef') },
+    { accessorKey: 'reg_ip', header: t('usersRegIP') },
     { accessorKey: 'created_at', header: t('usersCreated') }
   ]
   if (canManageUsers.value) value.push({ id: 'actions', header: t('usersActions') })
@@ -125,6 +133,8 @@ async function loadUsers() {
   if (appliedID.value) query.set('id', appliedID.value)
   if (appliedName.value) query.set('name', appliedName.value)
   if (appliedEmail.value) query.set('email', appliedEmail.value)
+  if (appliedRef.value) query.set('ref', appliedRef.value)
+  if (appliedRegIP.value) query.set('reg_ip', appliedRegIP.value)
   if (appliedAccess.value !== allAccessFilter) query.set('access', appliedAccess.value)
   try {
     const response = await apiRequest<UsersResponse>(`/admin/users/list?${query}`)
@@ -148,6 +158,8 @@ function applyFilters() {
   appliedID.value = idSearch.value.trim()
   appliedName.value = nameSearch.value.trim()
   appliedEmail.value = emailSearch.value.trim()
+  appliedRef.value = refSearch.value.trim()
+  appliedRegIP.value = regIPSearch.value.trim()
   appliedAccess.value = accessFilter.value
   if (page.value === 1) void loadUsers()
   else page.value = 1
@@ -219,7 +231,7 @@ void loadUsers()
             class="space-y-3 border-b border-accented px-4 py-3.5"
             @submit.prevent="applyFilters"
           >
-            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-7">
               <UInput
                 v-model="idSearch"
                 variant="soft"
@@ -244,6 +256,23 @@ void loadUsers()
                 :aria-label="t('usersEmail')"
                 class="w-full"
               />
+              <UInput
+                v-model="refSearch"
+                variant="soft"
+                maxlength="26"
+                :placeholder="t('usersRef')"
+                :aria-label="t('usersRef')"
+                class="w-full"
+              />
+              <UInput
+                v-model="regIPSearch"
+                variant="soft"
+                maxlength="45"
+                :placeholder="t('usersRegIP')"
+                :aria-label="t('usersRegIP')"
+                dir="ltr"
+                class="w-full"
+              />
               <USelect
                 v-model="accessFilter"
                 :items="accessFilterOptions"
@@ -263,7 +292,7 @@ void loadUsers()
                 {{ t('usersSearch') }}
               </UButton>
             </div>
-            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-7">
               <UBadge
                 v-if="!canManageUsers"
                 color="neutral"
@@ -292,7 +321,7 @@ void loadUsers()
               :columns="columns"
               :loading="loading"
               sticky
-              class="min-w-4xl"
+              class="min-w-5xl"
               :ui="{ th: 'whitespace-nowrap', td: 'align-middle' }"
             >
               <template #name-cell="{ row }">
@@ -317,6 +346,14 @@ void loadUsers()
                     {{ permission }}
                   </UBadge>
                 </div>
+              </template>
+
+              <template #ref-cell="{ row }">
+                <span class="font-mono text-xs whitespace-nowrap">{{ row.original.ref || '-' }}</span>
+              </template>
+
+              <template #reg_ip-cell="{ row }">
+                <span class="font-mono text-xs whitespace-nowrap">{{ row.original.reg_ip || '-' }}</span>
               </template>
 
               <template #created_at-cell="{ row }">

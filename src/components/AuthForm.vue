@@ -9,6 +9,7 @@ import { authErrorKey } from './authErrors'
 import { apiErrorContent } from './apiErrors'
 import { apiRequest, safeLocalRedirect, useAuth } from '../composables/useAuth'
 import type { SessionUser } from '../composables/useAuth'
+import { readReferralCookie } from '../composables/referral'
 
 const props = defineProps<{ mode: 'login' | 'register' | 'reset' }>()
 const { locale, t } = useI18n()
@@ -120,6 +121,7 @@ async function submit() {
   requestError.value = null
   emailCodeSent.value = false
   let destination: string | undefined
+  const referral = props.mode === 'register' ? readReferralCookie() : ''
   const body = {
     email: state.email.trim(),
     password: state.password,
@@ -133,7 +135,12 @@ async function submit() {
       destination = '/user/login?reset=success'
     } else {
       const result = await apiRequest<SessionUser>(`/user/${props.mode}`, props.mode === 'register'
-        ? { ...body, ...(state.name.trim() ? { name: state.name.trim() } : {}), email_code: state.email_code.trim() }
+        ? {
+            ...body,
+            ...(state.name.trim() ? { name: state.name.trim() } : {}),
+            email_code: state.email_code.trim(),
+            ...(referral ? { ref: referral } : {})
+          }
         : body)
       setUser(result)
       destination = redirect.value

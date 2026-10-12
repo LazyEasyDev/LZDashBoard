@@ -11,6 +11,7 @@ import ui from '@nuxt/ui/vue-plugin'
 import App from './App.vue'
 import { i18n } from './i18n'
 import { authGuard } from './authGuard'
+import { captureReferral } from './composables/referral'
 
 const app = createApp(App)
 
@@ -20,6 +21,9 @@ const router = createRouter({
   history: createWebHistory()
 })
 
+router.beforeEach(async to => {
+  await captureReferral(to.query.ref)
+})
 router.beforeEach(authGuard)
 
 app.use(head)

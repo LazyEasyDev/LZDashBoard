@@ -5,8 +5,10 @@ import type { DropdownMenuItem, NavigationMenuItem } from '@nuxt/ui'
 import { useAppTheme } from '../composables/useAppTheme'
 import { useAuth } from '../composables/useAuth'
 import { API_ORIGIN } from '../config/api'
+import ReferralLinkDialog from '../components/ReferralLinkDialog.vue'
 
 const open = ref(false)
+const referralDialogOpen = ref(false)
 const { t } = useI18n()
 const { colorMode, themeIcon, toggleTheme } = useAppTheme()
 const { user, canViewAdmin } = useAuth()
@@ -16,6 +18,12 @@ const accountMenuItems = computed<DropdownMenuItem[][]>(() => [[{
   avatar: { alt: user.value?.email ?? '' },
   type: 'label'
 }], [{
+  label: t('referralMenu'),
+  icon: 'i-lucide-link',
+  onSelect: () => {
+    referralDialogOpen.value = true
+  }
+}, {
   label: t('changePassword'),
   icon: 'i-lucide-key-round',
   to: '/user/reset-password'
@@ -40,23 +48,30 @@ const links = computed(() => [{
   }
 }, ...(canViewAdmin.value ? [{
   label: t('admin'),
-  icon: 'i-lucide-folder',
+  icon: 'i-lucide-shield-check',
+  slot: 'admin',
   defaultOpen: true,
   type: 'trigger' as const,
   children: [{
-    label: t('users'),
-    icon: 'i-lucide-users',
-    to: '/admin/users',
-    onSelect: () => {
-      open.value = false
-    }
-  }, {
-    label: t('dbkv'),
-    icon: 'i-lucide-database',
-    to: '/admin/dbkv',
-    onSelect: () => {
-      open.value = false
-    }
+    label: t('base'),
+    icon: 'i-lucide-folder',
+    defaultOpen: true,
+    type: 'trigger' as const,
+    children: [{
+      label: t('users'),
+      icon: 'i-lucide-users',
+      to: '/admin/users',
+      onSelect: () => {
+        open.value = false
+      }
+    }, {
+      label: t('dbkv'),
+      icon: 'i-lucide-database',
+      to: '/admin/dbkv',
+      onSelect: () => {
+        open.value = false
+      }
+    }]
   }]
 }] : []), {
   label: t('settings'),
@@ -118,7 +133,23 @@ const links = computed(() => [{
           orientation="vertical"
           tooltip
           popover
-        />
+        >
+          <template #admin-content="{ item, ui }">
+            <ul :class="ui.childList()">
+              <li data-slot="childLabel" :class="ui.childLabel()">
+                {{ item.label }}
+              </li>
+              <li>
+                <UNavigationMenu
+                  :items="item.children"
+                  :ui="{ linkLabel: 'whitespace-normal', childLinkLabel: 'whitespace-normal' }"
+                  orientation="vertical"
+                  class="min-w-48"
+                />
+              </li>
+            </ul>
+          </template>
+        </UNavigationMenu>
       </template>
 
       <template #footer="{ collapsed }">
@@ -126,7 +157,7 @@ const links = computed(() => [{
           v-if="user"
           :items="accountMenuItems"
           :content="{ align: 'center', collisionPadding: 12 }"
-          :ui="{ content: collapsed ? 'w-48' : 'w-(--reka-dropdown-menu-trigger-width)' }"
+          :ui="{ content: collapsed ? 'w-48' : 'w-(--reka-dropdown-menu-trigger-width)', itemLabel: 'whitespace-normal' }"
           :modal="false"
         >
           <UButton
@@ -145,6 +176,7 @@ const links = computed(() => [{
       </template>
     </UDashboardSidebar>
 
+    <ReferralLinkDialog v-if="user" v-model:open="referralDialogOpen" />
     <RouterView />
   </UDashboardGroup>
 </template>
