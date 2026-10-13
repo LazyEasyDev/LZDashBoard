@@ -78,6 +78,13 @@ const links = computed(() => [{
       onSelect: () => {
         open.value = false
       }
+    }, {
+      label: t('easyStatistics'),
+      icon: 'i-lucide-chart-no-axes-combined',
+      to: '/admin/easystatistics',
+      onSelect: () => {
+        open.value = false
+      }
     }]
   }]
 }] : []), {

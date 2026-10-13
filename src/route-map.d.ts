@@ -59,6 +59,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/admin/easystatistics': RouteRecordInfo<
+      '/admin/easystatistics',
+      '/admin/easystatistics',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/admin/users': RouteRecordInfo<
       '/admin/users',
       '/admin/users',
@@ -143,6 +150,14 @@ declare module 'vue-router/auto-routes' {
     'src/pages/admin/easyroutine.vue': {
       routes:
         | '/admin/easyroutine'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/admin/easystatistics.vue': {
+      routes:
+        | '/admin/easystatistics'
       views:
         | never
       pathParamNames:

@@ -353,6 +353,8 @@ onBeforeUnmount(() => { requestVersion += 1 })
             />
             <UPagination
               :page="pagination.pageIndex + 1"
+              variant="ghost"
+              active-variant="soft"
               :total="filteredRecords.length"
               :items-per-page="pagination.pageSize"
               :sibling-count="1"

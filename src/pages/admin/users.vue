@@ -394,6 +394,8 @@ void loadUsers()
               <USelect v-model="pageSize" :items="pageSizeOptions" class="w-20" />
               <UPagination
                 v-model:page="page"
+                variant="ghost"
+                active-variant="soft"
                 :total="total"
                 :items-per-page="pageSize"
                 :sibling-count="1"
