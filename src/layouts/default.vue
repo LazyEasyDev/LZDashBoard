@@ -73,7 +73,7 @@ const links = computed(() => [{
       }
     }, {
       label: t('easyRoutine'),
-      icon: 'i-lucide-workflow',
+      icon: 'i-lucide-clock',
       to: '/admin/easyroutine',
       onSelect: () => {
         open.value = false

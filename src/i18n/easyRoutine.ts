@@ -45,7 +45,15 @@ export const easyRoutineEnglish = {
   routineRowsPerPage: 'Rows per page',
   routineSort: 'Sort by {column}',
   routineSortPanic: 'Sort by panic logs',
-  routineViewLogs: 'View {status} logs for {name}'
+  routineViewLogs: 'View {status} logs for {name}',
+  routineActions: 'Actions',
+  routineDelete: 'Delete records',
+  routineDeleteConfirm: 'Delete "{name}" and all its retained logs? This cannot be undone.',
+  routineConfirmName: 'Confirm routine name',
+  routineNameMismatch: 'The name must match exactly.',
+  routineDeleted: 'Routine records deleted',
+  routineDeleteError: 'Routine records could not be deleted.',
+  routineCancel: 'Cancel'
 }
 
 export const easyRoutineMessages = {
@@ -97,7 +105,15 @@ export const easyRoutineMessages = {
     routineRowsPerPage: '每页行数',
     routineSort: '按{column}排序',
     routineSortPanic: '按 Panic 日志数排序',
-    routineViewLogs: '查看 {name} 的{status}日志'
+    routineViewLogs: '查看 {name} 的{status}日志',
+    routineActions: '操作',
+    routineDelete: '删除记录',
+    routineDeleteConfirm: '删除“{name}”及其所有保留日志？此操作无法撤销。',
+    routineConfirmName: '确认任务名称',
+    routineNameMismatch: '名称必须完全一致。',
+    routineDeleted: '任务记录已删除',
+    routineDeleteError: '无法删除任务记录。',
+    routineCancel: '取消'
   },
   es: {
     easyRoutine: 'EasyRoutine',
@@ -146,7 +162,15 @@ export const easyRoutineMessages = {
     routineRowsPerPage: 'Filas por página',
     routineSort: 'Ordenar por {column}',
     routineSortPanic: 'Ordenar por registros de pánico',
-    routineViewLogs: 'Ver registros de {status} para {name}'
+    routineViewLogs: 'Ver registros de {status} para {name}',
+    routineActions: 'Acciones',
+    routineDelete: 'Eliminar registros',
+    routineDeleteConfirm: '¿Eliminar "{name}" y todos sus registros retenidos? No se puede deshacer.',
+    routineConfirmName: 'Confirmar nombre de rutina',
+    routineNameMismatch: 'El nombre debe coincidir exactamente.',
+    routineDeleted: 'Registros de rutina eliminados',
+    routineDeleteError: 'No se pudieron eliminar los registros de la rutina.',
+    routineCancel: 'Cancelar'
   },
   hi: {
     easyRoutine: 'EasyRoutine',
@@ -195,7 +219,15 @@ export const easyRoutineMessages = {
     routineRowsPerPage: 'प्रति पेज पंक्तियाँ',
     routineSort: '{column} के अनुसार क्रमबद्ध करें',
     routineSortPanic: 'पैनिक लॉग के अनुसार क्रमबद्ध करें',
-    routineViewLogs: '{name} के {status} लॉग देखें'
+    routineViewLogs: '{name} के {status} लॉग देखें',
+    routineActions: 'क्रियाएँ',
+    routineDelete: 'रिकॉर्ड हटाएँ',
+    routineDeleteConfirm: '"{name}" और उसके सभी संग्रहीत लॉग हटाएँ? इसे पूर्ववत नहीं किया जा सकता।',
+    routineConfirmName: 'रूटीन नाम की पुष्टि करें',
+    routineNameMismatch: 'नाम बिल्कुल मेल खाना चाहिए।',
+    routineDeleted: 'रूटीन रिकॉर्ड हटा दिए गए',
+    routineDeleteError: 'रूटीन रिकॉर्ड हटाए नहीं जा सके।',
+    routineCancel: 'रद्द करें'
   },
   fr: {
     easyRoutine: 'EasyRoutine',
@@ -244,7 +276,15 @@ export const easyRoutineMessages = {
     routineRowsPerPage: 'Lignes par page',
     routineSort: 'Trier par {column}',
     routineSortPanic: 'Trier par journaux de panique',
-    routineViewLogs: 'Voir les journaux {status} de {name}'
+    routineViewLogs: 'Voir les journaux {status} de {name}',
+    routineActions: 'Actions',
+    routineDelete: 'Supprimer les enregistrements',
+    routineDeleteConfirm: 'Supprimer "{name}" et tous ses journaux conservés ? Cette action est irréversible.',
+    routineConfirmName: 'Confirmer le nom de la routine',
+    routineNameMismatch: 'Le nom doit correspondre exactement.',
+    routineDeleted: 'Enregistrements de routine supprimés',
+    routineDeleteError: 'Impossible de supprimer les enregistrements de la routine.',
+    routineCancel: 'Annuler'
   },
   ar: {
     easyRoutine: 'EasyRoutine',
@@ -293,6 +333,14 @@ export const easyRoutineMessages = {
     routineRowsPerPage: 'صفوف لكل صفحة',
     routineSort: 'ترتيب حسب {column}',
     routineSortPanic: 'ترتيب حسب سجلات الفشل',
-    routineViewLogs: 'عرض سجلات {status} للمهمة {name}'
+    routineViewLogs: 'عرض سجلات {status} للمهمة {name}',
+    routineActions: 'الإجراءات',
+    routineDelete: 'حذف السجلات',
+    routineDeleteConfirm: 'حذف "{name}" وجميع سجلاتها المحفوظة؟ لا يمكن التراجع عن هذا الإجراء.',
+    routineConfirmName: 'تأكيد اسم المهمة',
+    routineNameMismatch: 'يجب أن يتطابق الاسم تمامًا.',
+    routineDeleted: 'تم حذف سجلات المهمة',
+    routineDeleteError: 'تعذر حذف سجلات المهمة.',
+    routineCancel: 'إلغاء'
   }
 } satisfies Record<string, Record<keyof typeof easyRoutineEnglish, string>>

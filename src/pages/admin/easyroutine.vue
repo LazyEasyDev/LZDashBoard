@@ -10,7 +10,7 @@ import { apiErrorContent } from '../../components/apiErrors'
 import type { ApiErrorContent } from '../../components/apiErrors'
 import type { EasyRoutineLog, EasyRoutineRecord, RoutineSnapshot } from '../../components/easyRoutineRecords'
 import { filterRoutines, formatRoutineTime, routineStatusColor, routineStatuses, routineStatusKeys } from '../../components/easyRoutineRecords'
-import { apiRequest } from '../../composables/useAuth'
+import { apiRequest, useAuth } from '../../composables/useAuth'
 
 interface LogCache {
   items: EasyRoutineLog[]
@@ -21,12 +21,19 @@ interface LogCache {
 }
 
 const { t, locale } = useI18n()
+const { canManageUsers: canManageRoutines } = useAuth()
+const toast = useToast()
 const records = ref<EasyRoutineRecord[]>([])
 const search = ref('')
 const statusFilter = ref('__all__')
 const hasPanic = ref(false)
 const loading = ref(false)
 const loadError = ref<ApiErrorContent | null>(null)
+const deleteOpen = ref(false)
+const deleteTarget = ref<EasyRoutineRecord | null>(null)
+const deleteConfirmation = ref('')
+const deleting = ref(false)
+const deleteError = ref<ApiErrorContent | null>(null)
 const fetchedAt = ref(0)
 const expanded = ref<ExpandedState>({})
 const logCache = reactive<Record<string, LogCache>>({})
@@ -38,6 +45,7 @@ const pageSizeOptions = [10, 20, 50].map(value => ({ label: String(value), value
 const sortableColumns = ['name', 'status', 'history', 'success_count', 'failure_count', 'latest_panic_at', 'updated_at']
 let requestVersion = 0
 
+const deleteConfirmed = computed(() => !!deleteTarget.value && deleteConfirmation.value === deleteTarget.value.name)
 const filteredRecords = computed(() => filterRoutines(records.value, search.value, statusFilter.value === '__all__' ? '' : statusFilter.value, hasPanic.value))
 const statusOptions = computed(() => [
   { label: t('routineAllStatuses'), value: '__all__' },
@@ -47,16 +55,20 @@ const statusOptions = computed(() => [
 const lastPage = computed(() => Math.max(1, Math.ceil(filteredRecords.value.length / pagination.value.pageSize)))
 const firstVisible = computed(() => filteredRecords.value.length ? pagination.value.pageIndex * pagination.value.pageSize + 1 : 0)
 const lastVisible = computed(() => Math.min((pagination.value.pageIndex + 1) * pagination.value.pageSize, filteredRecords.value.length))
-const columns = computed<TableColumn<EasyRoutineRecord>[]>(() => [
-  { id: 'expand', size: 48, enableSorting: false },
-  { accessorKey: 'name', header: t('routineName'), enableSorting: true },
-  { accessorKey: 'status', header: t('routineStatus'), enableSorting: true },
-  { id: 'history', accessorFn: record => record.log_counts.panic, header: t('routineHistory'), enableSorting: true },
-  { accessorKey: 'success_count', header: t('routineSuccesses'), enableSorting: true },
-  { accessorKey: 'failure_count', header: t('routineFailures'), enableSorting: true },
-  { accessorKey: 'latest_panic_at', header: t('routineLatestPanic'), enableSorting: true },
-  { accessorKey: 'updated_at', header: t('routineUpdated'), enableSorting: true }
-])
+const columns = computed<TableColumn<EasyRoutineRecord>[]>(() => {
+  const result: TableColumn<EasyRoutineRecord>[] = [
+    { id: 'expand', size: 48, enableSorting: false },
+    { accessorKey: 'name', header: t('routineName'), enableSorting: true },
+    { accessorKey: 'status', header: t('routineStatus'), enableSorting: true },
+    { id: 'history', accessorFn: record => record.log_counts.panic, header: t('routineHistory'), enableSorting: true },
+    { accessorKey: 'success_count', header: t('routineSuccesses'), enableSorting: true },
+    { accessorKey: 'failure_count', header: t('routineFailures'), enableSorting: true },
+    { accessorKey: 'latest_panic_at', header: t('routineLatestPanic'), enableSorting: true },
+    { accessorKey: 'updated_at', header: t('routineUpdated'), enableSorting: true }
+  ]
+  if (canManageRoutines.value) result.push({ id: 'actions', header: t('routineActions'), size: 64, enableSorting: false })
+  return result
+})
 
 function statusLabel(status: string) {
   return Object.prototype.hasOwnProperty.call(routineStatusKeys, status)
@@ -120,6 +132,32 @@ function toggleRow(event: Event, row: TableRow<EasyRoutineRecord>) {
   row.toggleExpanded()
 }
 
+function confirmDelete(record: EasyRoutineRecord) {
+  if (!canManageRoutines.value || deleting.value || loading.value) return
+  deleteTarget.value = record
+  deleteConfirmation.value = ''
+  deleteError.value = null
+  deleteOpen.value = true
+}
+
+async function deleteRoutine() {
+  if (!canManageRoutines.value || deleting.value || !deleteTarget.value || !deleteConfirmed.value) return
+  const target = deleteTarget.value
+  deleting.value = true
+  deleteError.value = null
+  try {
+    await apiRequest<{ message: string }>('/admin/easyroutine/delete', { name: target.name })
+    records.value = records.value.filter(record => record.routine_id !== target.routine_id)
+    deleteOpen.value = false
+    toast.add({ title: t('routineDeleted'), color: 'success' })
+    await loadRoutines()
+  } catch (error) {
+    deleteError.value = apiErrorContent(error, t('routineDeleteError'))
+  } finally {
+    deleting.value = false
+  }
+}
+
 watch(expanded, value => {
   const ids = value === true ? records.value.map(record => record.routine_id) : Object.keys(value).filter(id => value[id])
   for (const id of ids) {
@@ -168,6 +206,7 @@ onBeforeUnmount(() => { requestVersion += 1 })
               variant="ghost"
               :aria-label="t('routineRefresh')"
               :loading="loading"
+              :disabled="deleting"
               class="size-8 shrink-0 justify-center"
               @click="loadRoutines"
             />
@@ -180,7 +219,7 @@ onBeforeUnmount(() => { requestVersion += 1 })
             class="w-44"
           />
           <UCheckbox v-model="hasPanic" :label="t('routineHasPanic')" />
-          <UBadge color="neutral" variant="subtle">
+          <UBadge v-if="!canManageRoutines" color="neutral" variant="subtle">
             {{ t('usersReadOnly') }}
           </UBadge>
           <span v-if="fetchedAt" class="text-xs text-muted sm:ms-auto">
@@ -269,6 +308,19 @@ onBeforeUnmount(() => { requestVersion += 1 })
           <template #updated_at-cell="{ row }">
             <span class="text-xs whitespace-nowrap text-muted">{{ formatRoutineTime(row.original.updated_at, locale) }}</span>
           </template>
+          <template #actions-cell="{ row }">
+            <UTooltip :text="t('routineDelete')">
+              <UButton
+                icon="i-lucide-trash-2"
+                color="error"
+                variant="ghost"
+                :aria-label="`${t('routineDelete')}: ${row.original.name}`"
+                :disabled="deleting || loading"
+                class="size-8 justify-center"
+                @click.stop="confirmDelete(row.original)"
+              />
+            </UTooltip>
+          </template>
           <template #expanded="{ row }">
             <EasyRoutineLogs
               v-model:status-filter="logFilters[row.id]"
@@ -310,6 +362,69 @@ onBeforeUnmount(() => { requestVersion += 1 })
           </div>
         </div>
       </div>
+
+      <UModal
+        v-model:open="deleteOpen"
+        :title="t('routineDelete')"
+        :description="t('routineDeleteConfirm', { name: deleteTarget?.name ?? '' })"
+        :dismissible="!deleting"
+        :close="!deleting"
+        :ui="{ description: 'whitespace-pre-wrap [overflow-wrap:anywhere]' }"
+      >
+        <template #body>
+          <form id="easyroutine-delete-form" class="space-y-4" @submit.prevent="deleteRoutine">
+            <UAlert
+              v-if="deleteError"
+              color="error"
+              variant="subtle"
+              icon="i-lucide-circle-alert"
+              :title="deleteError.title"
+              :description="deleteError.description"
+              :ui="{ title: 'whitespace-pre-wrap [overflow-wrap:anywhere]', description: 'whitespace-pre-wrap [overflow-wrap:anywhere]' }"
+              role="alert"
+            />
+            <UFormField
+              :label="t('routineConfirmName')"
+              :error="deleteConfirmation && !deleteConfirmed ? t('routineNameMismatch') : undefined"
+              required
+            >
+              <UInput
+                v-model="deleteConfirmation"
+                :placeholder="deleteTarget?.name"
+                :disabled="deleting"
+                :spellcheck="false"
+                autocomplete="off"
+                autocapitalize="off"
+                class="w-full"
+                :ui="{ base: 'font-mono' }"
+              />
+            </UFormField>
+          </form>
+        </template>
+        <template #footer>
+          <div class="flex w-full justify-end gap-2">
+            <UButton
+              color="neutral"
+              variant="outline"
+              :disabled="deleting"
+              @click="deleteOpen = false"
+            >
+              {{ t('routineCancel') }}
+            </UButton>
+            <UButton
+              type="submit"
+              form="easyroutine-delete-form"
+              icon="i-lucide-trash-2"
+              color="error"
+              variant="soft"
+              :loading="deleting"
+              :disabled="!canManageRoutines || !deleteConfirmed"
+            >
+              {{ t('routineDelete') }}
+            </UButton>
+          </div>
+        </template>
+      </UModal>
     </template>
   </UDashboardPanel>
 </template>
