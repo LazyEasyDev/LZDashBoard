@@ -2,6 +2,7 @@ import { authMessages } from './auth'
 import { adminUsersMessages } from './adminUsers'
 import { adminDBKVMessages } from './adminDBKV'
 import { referralMessages } from './referral'
+import { easyRoutineMessages } from './easyRoutine'
 
 export const languageConfig = {
   defaultLanguage: 'en',
@@ -23,6 +24,7 @@ export const english = {
   ...adminUsersMessages.en,
   ...adminDBKVMessages.en,
   ...referralMessages.en,
+  ...easyRoutineMessages.en,
   home: 'Home',
   notFoundTitle: 'Page not found',
   notFoundDescription: 'This page does not exist or has been moved.',
@@ -55,6 +57,7 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
     ...adminUsersMessages['zh-CN'],
     ...adminDBKVMessages['zh-CN'],
     ...referralMessages['zh-CN'],
+    ...easyRoutineMessages['zh-CN'],
     home: '首页',
     notFoundTitle: '页面未找到',
     notFoundDescription: '此页面不存在或已被移动。',
@@ -82,6 +85,7 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
     ...adminUsersMessages.es,
     ...adminDBKVMessages.es,
     ...referralMessages.es,
+    ...easyRoutineMessages.es,
     home: 'Inicio',
     notFoundTitle: 'Página no encontrada',
     notFoundDescription: 'Esta página no existe o se ha movido.',
@@ -109,6 +113,7 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
     ...adminUsersMessages.hi,
     ...adminDBKVMessages.hi,
     ...referralMessages.hi,
+    ...easyRoutineMessages.hi,
     home: 'होम',
     notFoundTitle: 'पेज नहीं मिला',
     notFoundDescription: 'यह पेज मौजूद नहीं है या इसे कहीं और ले जाया गया है।',
@@ -136,6 +141,7 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
     ...adminUsersMessages.fr,
     ...adminDBKVMessages.fr,
     ...referralMessages.fr,
+    ...easyRoutineMessages.fr,
     home: 'Accueil',
     notFoundTitle: 'Page introuvable',
     notFoundDescription: 'Cette page n’existe pas ou a été déplacée.',
@@ -163,6 +169,7 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
     ...adminUsersMessages.ar,
     ...adminDBKVMessages.ar,
     ...referralMessages.ar,
+    ...easyRoutineMessages.ar,
     home: 'الرئيسية',
     notFoundTitle: 'الصفحة غير موجودة',
     notFoundDescription: 'هذه الصفحة غير موجودة أو تم نقلها.',

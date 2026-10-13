@@ -71,6 +71,13 @@ const links = computed(() => [{
       onSelect: () => {
         open.value = false
       }
+    }, {
+      label: t('easyRoutine'),
+      icon: 'i-lucide-workflow',
+      to: '/admin/easyroutine',
+      onSelect: () => {
+        open.value = false
+      }
     }]
   }]
 }] : []), {
