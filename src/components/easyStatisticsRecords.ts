@@ -7,6 +7,7 @@ export interface StatisticsDimension {
   order_fields: string[]
   group_intervals: StatisticsInterval[]
   clear_after: number
+  count: number
 }
 
 export interface StatisticsDefinition {

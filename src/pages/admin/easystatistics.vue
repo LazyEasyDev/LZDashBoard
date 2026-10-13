@@ -204,7 +204,7 @@ onBeforeUnmount(() => {
                 :key="field"
                 color="neutral"
                 variant="subtle"
-                class="font-mono"
+                class="max-w-full font-mono whitespace-normal [overflow-wrap:anywhere]"
               >
                 {{ field }}
               </UBadge>
@@ -212,10 +212,13 @@ onBeforeUnmount(() => {
           </template>
           <template #dimensions-cell="{ row }">
             <div class="min-w-48 max-w-80 space-y-1 text-xs">
-              <p v-for="(value, index) in row.original.dimensions" :key="index" class="whitespace-pre-wrap [overflow-wrap:anywhere]">
-                <span class="font-mono text-highlighted">{{ value.order_fields.join(', ') }}</span>
-                <span class="ms-2 text-muted">{{ value.group_intervals.join(' / ') }}</span>
-              </p>
+              <div v-for="(value, index) in row.original.dimensions" :key="index" class="flex items-start justify-between gap-3">
+                <p class="min-w-0 whitespace-pre-wrap [overflow-wrap:anywhere]">
+                  <span class="font-mono text-highlighted">{{ value.order_fields.join(', ') }}</span>
+                  <span class="ms-2 text-muted">{{ value.group_intervals.join(' / ') }}</span>
+                </p>
+                <span class="shrink-0 text-muted tabular-nums whitespace-nowrap">{{ t('statisticsRowCount', { count: new Intl.NumberFormat(locale).format(value.count) }) }}</span>
+              </div>
             </div>
           </template>
           <template #update_interval-cell="{ row }">
