@@ -21,6 +21,8 @@ const batchesLoading = ref(false)
 const loadError = ref<ApiErrorContent | null>(null)
 const batchesError = ref<ApiErrorContent | null>(null)
 const batchCount = ref<number | null>(null)
+const totalDBCount = ref<number | null>(null)
+const activeDBCount = ref<number | null>(null)
 const fetchedAt = ref(0)
 const maxQueryBuckets = ref(500)
 const filteredItems = computed(() => filterStatistics(items.value, search.value))
@@ -44,6 +46,8 @@ async function loadDefinitions() {
     const response = await apiRequest<StatisticsListSnapshot>('/admin/easystatistics/list')
     if (version !== listVersion) return
     items.value = response.items
+    totalDBCount.value = response.total_db_count
+    activeDBCount.value = response.active_db_count
     maxQueryBuckets.value = response.max_query_buckets
     fetchedAt.value = response.fetched_at
   } catch (failure) {
@@ -126,6 +130,12 @@ onBeforeUnmount(() => {
           </UTooltip>
           <UBadge color="neutral" variant="subtle">
             {{ t('statisticsRegisteredCount', { count: items.length }) }}
+          </UBadge>
+          <UBadge color="neutral" variant="subtle" class="tabular-nums">
+            {{ t('statisticsTotalDBCount', { count: totalDBCount === null ? '-' : new Intl.NumberFormat(locale).format(totalDBCount) }) }}
+          </UBadge>
+          <UBadge color="neutral" variant="subtle" class="tabular-nums">
+            {{ t('statisticsActiveDBCount', { count: activeDBCount === null ? '-' : new Intl.NumberFormat(locale).format(activeDBCount) }) }}
           </UBadge>
           <UBadge color="neutral" variant="subtle" role="status">
             <UIcon v-if="batchesLoading" name="i-lucide-loader-circle" class="size-3.5 animate-spin motion-reduce:animate-none" />

@@ -33,6 +33,8 @@ export interface StatisticsRecord {
 
 export interface StatisticsListSnapshot {
   items: StatisticsDefinition[]
+  total_db_count: number
+  active_db_count: number
   max_query_buckets: number
   fetched_at: number
 }
