@@ -1,6 +1,11 @@
+export const dbkvFormats = ['int64', 'bool', 'float64', 'json_str', 'string'] as const
+
+export type DBKVFormat = typeof dbkvFormats[number]
+
 export interface DBKVRecord {
   id: number
   key: string
+  format: DBKVFormat
   value: string
   description: string
   visible: boolean
@@ -23,5 +28,24 @@ export function isValidJSON(value: string): boolean {
     return true
   } catch {
     return false
+  }
+}
+
+export function isValidDBKVValue(format: DBKVFormat, value: string): boolean {
+  if (format === 'string') return true
+  if (format === 'json_str') return isValidJSON(value)
+  if (value.trim() !== value) return false
+  switch (format) {
+    case 'int64': {
+      if (!/^[+-]?[0-9]+$/.test(value)) return false
+      const integer = BigInt(value)
+      return integer >= BigInt('-9223372036854775808') && integer <= BigInt('9223372036854775807')
+    }
+    case 'bool':
+      return value === 'true' || value === 'false'
+    case 'float64':
+      return /^[+-]?(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$/.test(value) && Number.isFinite(Number(value))
+    default:
+      return false
   }
 }

@@ -5,8 +5,8 @@ import { useI18n } from 'vue-i18n'
 import AppNavbar from '../../components/AppNavbar.vue'
 import { apiErrorContent } from '../../components/apiErrors'
 import type { ApiErrorContent } from '../../components/apiErrors'
-import { filterDBKVRecords, isValidDBKVKey, isValidJSON } from '../../components/dbkvRecords'
-import type { DBKVRecord } from '../../components/dbkvRecords'
+import { dbkvFormats, filterDBKVRecords, isValidDBKVKey, isValidDBKVValue } from '../../components/dbkvRecords'
+import type { DBKVFormat, DBKVRecord } from '../../components/dbkvRecords'
 import { apiRequest, useAuth } from '../../composables/useAuth'
 
 const { t } = useI18n()
@@ -23,7 +23,10 @@ const editorOpen = ref(false)
 const creating = ref(false)
 const saving = ref(false)
 const formError = ref<ApiErrorContent | null>(null)
-const form = reactive({ key: '', value: '', description: '' })
+const formatOptions = dbkvFormats.map(value => ({ label: value, value }))
+const form = reactive<{ key: string, format: DBKVFormat | undefined, value: string, description: string }>({
+  key: '', format: undefined, value: '', description: ''
+})
 const deleteOpen = ref(false)
 const deleteTarget = ref<DBKVRecord | null>(null)
 const deleteConfirmation = ref('')
@@ -36,7 +39,13 @@ const lastPage = computed(() => Math.max(1, Math.ceil(filteredRecords.value.leng
 const pageRecords = computed(() => filteredRecords.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value))
 const firstVisible = computed(() => filteredRecords.value.length ? (page.value - 1) * pageSize.value + 1 : 0)
 const lastVisible = computed(() => Math.min(page.value * pageSize.value, filteredRecords.value.length))
-const jsonError = computed(() => isValidJSON(form.value) ? undefined : t('dbkvInvalidJSON'))
+const valueError = computed(() => {
+  if (!form.format || isValidDBKVValue(form.format, form.value)) return undefined
+  if (form.format === 'json_str') return t('dbkvInvalidJSON')
+  if (form.format === 'int64') return t('dbkvInvalidInt64')
+  if (form.format === 'float64') return t('dbkvInvalidFloat64')
+  return t('dbkvInvalidBool')
+})
 const keyError = computed(() => creating.value && !isValidDBKVKey(form.key) ? t('dbkvInvalidKey') : undefined)
 const errorUI = { title: 'whitespace-pre-wrap [overflow-wrap:anywhere]', description: 'whitespace-pre-wrap [overflow-wrap:anywhere]' }
 let requestVersion = 0
@@ -44,6 +53,7 @@ let requestVersion = 0
 const columns = computed<TableColumn<DBKVRecord>[]>(() => {
   const result: TableColumn<DBKVRecord>[] = [
     { accessorKey: 'key', header: t('dbkvKey'), meta: { class: { th: 'w-1/4' } } },
+    { accessorKey: 'format', header: t('dbkvFormat'), meta: { class: { th: 'w-28' } } },
     { accessorKey: 'value', header: t('dbkvValue'), meta: { class: { th: 'w-1/3' } } },
     { accessorKey: 'description', header: t('dbkvDescription') }
   ]
@@ -85,7 +95,7 @@ async function loadRecords() {
 function openCreate() {
   if (!canManageDBKV.value || busy.value) return
   creating.value = true
-  Object.assign(form, { key: '', value: '{}', description: '' })
+  Object.assign(form, { key: '', format: undefined, value: '', description: '' })
   formError.value = null
   editorOpen.value = true
 }
@@ -93,25 +103,25 @@ function openCreate() {
 function openEdit(record: DBKVRecord) {
   if (!canManageDBKV.value || busy.value) return
   creating.value = false
-  Object.assign(form, { key: record.key, value: record.value, description: record.description })
+  Object.assign(form, { key: record.key, format: record.format, value: record.value, description: record.description })
   formError.value = null
   editorOpen.value = true
 }
 
 async function saveRecord() {
-  if (!canManageDBKV.value || busy.value || jsonError.value || keyError.value) return
+  if (!canManageDBKV.value || busy.value || !form.format || valueError.value || keyError.value) return
   saving.value = true
   formError.value = null
   const wasCreating = creating.value
   try {
-    await apiRequest(wasCreating ? '/admin/dbkv/create' : '/admin/dbkv/update', { ...form, key: form.key.trim() })
+    await apiRequest('/admin/dbkv/set', { ...form, key: form.key.trim() })
     editorOpen.value = false
-    toast.add({ title: t(wasCreating ? 'dbkvCreated' : 'dbkvUpdated'), color: 'success' })
+    toast.add({ title: t('dbkvSaved'), color: 'success' })
     if (wasCreating) search.value = ''
     await loadRecords()
     if (wasCreating) page.value = lastPage.value
   } catch (error) {
-    formError.value = apiErrorContent(error, t(wasCreating ? 'dbkvCreateError' : 'dbkvUpdateError'))
+    formError.value = apiErrorContent(error, t('dbkvSaveError'))
   } finally {
     saving.value = false
   }
@@ -141,6 +151,13 @@ async function deleteRecord() {
   }
 }
 
+watch(() => form.format, format => {
+  if (!creating.value) return
+  if (format === 'bool') form.value = 'false'
+  else if (format === 'int64' || format === 'float64') form.value = '0'
+  else if (format === 'json_str') form.value = 'null'
+  else form.value = ''
+})
 watch([search, pageSize], () => { page.value = 1 })
 watch(lastPage, () => { page.value = Math.min(page.value, lastPage.value) })
 
@@ -213,6 +230,9 @@ onBeforeUnmount(() => { requestVersion += 1 })
           >
             <template #key-cell="{ row }">
               <code class="text-sm font-medium whitespace-pre-wrap text-highlighted [overflow-wrap:anywhere]" dir="auto">{{ row.original.key }}</code>
+            </template>
+            <template #format-cell="{ row }">
+              <code class="text-xs text-muted">{{ row.original.format }}</code>
             </template>
             <template #value-cell="{ row }">
               <pre class="max-h-40 overflow-auto font-mono text-xs leading-5 whitespace-pre-wrap [overflow-wrap:anywhere]" dir="ltr">{{ row.original.value }}</pre>
@@ -300,11 +320,39 @@ onBeforeUnmount(() => { requestVersion += 1 })
                 :ui="{ base: 'font-mono' }"
               />
             </UFormField>
-            <UFormField :label="t('dbkvValue')" :error="jsonError" required>
-              <UTextarea
-                v-model="form.value"
-                :rows="12"
+            <UFormField :label="t('dbkvFormat')" required>
+              <USelect
+                v-model="form.format"
+                :items="formatOptions"
+                :placeholder="t('dbkvSelectFormat')"
+                :disabled="saving || !creating"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField :label="t('dbkvValue')" :error="valueError" required>
+              <USwitch
+                v-if="form.format === 'bool'"
+                :model-value="form.value === 'true'"
+                :label="form.value"
                 :disabled="saving"
+                @update:model-value="form.value = $event ? 'true' : 'false'"
+              />
+              <UInput
+                v-else-if="form.format === 'int64' || form.format === 'float64'"
+                v-model="form.value"
+                :inputmode="form.format === 'int64' ? 'numeric' : 'decimal'"
+                :disabled="saving"
+                :spellcheck="false"
+                autocomplete="off"
+                dir="ltr"
+                class="w-full"
+                :ui="{ base: 'font-mono text-sm' }"
+              />
+              <UTextarea
+                v-else
+                v-model="form.value"
+                :rows="8"
+                :disabled="saving || !form.format"
                 :spellcheck="false"
                 autocapitalize="off"
                 dir="ltr"
@@ -335,12 +383,12 @@ onBeforeUnmount(() => { requestVersion += 1 })
             <UButton
               type="submit"
               form="dbkv-editor-form"
-              :icon="creating ? 'i-lucide-plus' : 'i-lucide-save'"
+              icon="i-lucide-save"
               variant="soft"
               :loading="saving"
-              :disabled="!!jsonError || !!keyError || !canManageDBKV"
+              :disabled="!form.format || !!valueError || !!keyError || !canManageDBKV"
             >
-              {{ t(creating ? 'dbkvAdd' : 'dbkvSave') }}
+              {{ t('dbkvSave') }}
             </UButton>
           </div>
         </template>

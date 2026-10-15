@@ -3,9 +3,9 @@ import { filterDBKVRecords, isValidDBKVKey, isValidJSON } from '../src/component
 import type { DBKVRecord } from '../src/components/dbkvRecords'
 
 const records: DBKVRecord[] = [
-  { id: 1, key: 'site.name', value: '"LZApp"', description: 'Product title', visible: true },
-  { id: 2, key: 'feature.flags', value: '{"enabled":true}', description: 'Feature settings', visible: true },
-  { id: 3, key: 'max.connections', value: '120', description: 'Connection cap', visible: true }
+  { id: 1, key: 'site.name', format: 'string', value: 'LZApp', description: 'Product title', visible: true },
+  { id: 2, key: 'feature.flags', format: 'json_str', value: '{"enabled":true}', description: 'Feature settings', visible: true },
+  { id: 3, key: 'max.connections', format: 'int64', value: '120', description: 'Connection cap', visible: true }
 ]
 
 describe('DBKV local search', () => {
