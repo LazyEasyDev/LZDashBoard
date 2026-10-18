@@ -200,6 +200,11 @@ function restoreFilterDrafts() {
   for (const field of filterFields) field.draft.value = field.applied.value
 }
 
+function searchUsers() {
+  restoreFilterDrafts()
+  applyFilters()
+}
+
 function clearFilters() {
   for (const field of filterFields) field.draft.value = field.empty
   applyFilters()
@@ -292,16 +297,15 @@ void loadUsers()
                 {{ activeFilters.length }}
               </UBadge>
             </UButton>
-            <UTooltip :text="t('usersRefresh')">
-              <UButton
-                icon="i-lucide-refresh-cw"
-                color="neutral"
-                variant="ghost"
-                :loading="loading"
-                :aria-label="t('usersRefresh')"
-                @click="loadUsers"
-              />
-            </UTooltip>
+            <UButton
+              icon="i-lucide-search"
+              color="primary"
+              variant="soft"
+              :loading="loading"
+              @click="searchUsers"
+            >
+              {{ t('usersSearch') }}
+            </UButton>
             <UButton
               v-if="canManageUsers"
               icon="i-lucide-user-plus"
@@ -456,7 +460,13 @@ void loadUsers()
                 <UButton color="neutral" variant="outline" @click="clearFilters">
                   {{ t('usersClearFilters') }}
                 </UButton>
-                <UButton type="submit" form="users-filter-form" icon="i-lucide-check">
+                <UButton
+                  type="submit"
+                  form="users-filter-form"
+                  icon="i-lucide-check"
+                  color="primary"
+                  variant="soft"
+                >
                   {{ t('usersApplyFilters') }}
                 </UButton>
               </div>

@@ -73,6 +73,13 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
+    '/am/refstatistics': RouteRecordInfo<
+      '/am/refstatistics',
+      '/am/refstatistics',
+      Record<never, never>,
+      Record<never, never>,
+      | never
+    >,
     '/settings/exit': RouteRecordInfo<
       '/settings/exit',
       '/settings/exit',
@@ -166,6 +173,14 @@ declare module 'vue-router/auto-routes' {
     'src/pages/admin/users.vue': {
       routes:
         | '/admin/users'
+      views:
+        | never
+      pathParamNames:
+        | never
+    }
+    'src/pages/am/refstatistics.vue': {
+      routes:
+        | '/am/refstatistics'
       views:
         | never
       pathParamNames:

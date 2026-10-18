@@ -91,6 +91,7 @@ const access = computed<string[]>(() => {
 })
 const canViewAdmin = computed(() => access.value.some(value => value === 'admin' || value === 'viewall'))
 const canManageUsers = computed(() => access.value.includes('admin'))
+const canViewAM = computed(() => canViewAdmin.value || access.value.includes('am'))
 
 export function safeLocalRedirect(value: unknown): string {
   if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//')) return '/'
@@ -141,5 +142,5 @@ async function logout() {
 }
 
 export function useAuth() {
-	return { user: readonly(user), canViewAdmin, canManageUsers, setUser, restoreSession, logout }
+	return { user: readonly(user), canViewAdmin, canManageUsers, canViewAM, setUser, restoreSession, logout }
 }

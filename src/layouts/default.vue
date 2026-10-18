@@ -11,7 +11,7 @@ const open = ref(false)
 const referralDialogOpen = ref(false)
 const { t } = useI18n()
 const { colorMode, themeIcon, toggleTheme } = useAppTheme()
-const { user, canViewAdmin } = useAuth()
+const { user, canViewAdmin, canViewAM } = useAuth()
 
 const accountMenuItems = computed<DropdownMenuItem[][]>(() => [[{
   label: user.value?.email ?? '',
@@ -38,7 +38,7 @@ const accountMenuItems = computed<DropdownMenuItem[][]>(() => [[{
   to: '/settings/exit'
 }]])
 
-const links = computed(() => [{
+const links = computed<NavigationMenuItem[]>(() => [{
   label: t('home'),
   icon: 'i-lucide-house',
   to: '/',
@@ -50,14 +50,14 @@ const links = computed(() => [{
   label: t('admin'),
   icon: 'i-lucide-shield-check',
   slot: 'admin',
+  ui: { childList: 'rounded-md bg-elevated/50 p-1.5' },
   defaultOpen: true,
   type: 'trigger' as const,
   children: [{
-    label: t('base'),
-    icon: 'i-lucide-folder',
-    defaultOpen: true,
-    type: 'trigger' as const,
-    children: [{
+      label: t('base'),
+      type: 'label' as const,
+      ui: { label: 'mx-1 mb-1 w-fit rounded bg-accented/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted' }
+    }, {
       label: t('users'),
       icon: 'i-lucide-users',
       to: '/admin/users',
@@ -86,6 +86,24 @@ const links = computed(() => [{
         open.value = false
       }
     }]
+}] : []), ...(canViewAM.value ? [{
+  label: t('amMenu'),
+  icon: 'i-lucide-contact-round',
+  slot: 'am',
+  ui: { childList: 'rounded-md bg-elevated/50 p-1.5' },
+  defaultOpen: true,
+  type: 'trigger' as const,
+  children: [{
+    label: t('base'),
+    type: 'label' as const,
+    ui: { label: 'mx-1 mb-1 w-fit rounded bg-accented/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted' }
+  }, {
+    label: t('refStatisticsTitle'),
+    icon: 'i-lucide-chart-no-axes-combined',
+    to: '/am/refstatistics',
+    onSelect: () => {
+      open.value = false
+    }
   }]
 }] : []), {
   label: t('settings'),
@@ -103,7 +121,9 @@ const links = computed(() => [{
       open.value = false
     }
   }]
-}] satisfies NavigationMenuItem[])
+}])
+const adminLinks = computed(() => links.value.find(item => item.slot === 'admin')?.children ?? [])
+const amLinks = computed(() => links.value.find(item => item.slot === 'am')?.children ?? [])
 </script>
 
 <template>
@@ -148,20 +168,21 @@ const links = computed(() => [{
           tooltip
           popover
         >
-          <template #admin-content="{ item, ui }">
-            <ul :class="ui.childList()">
-              <li data-slot="childLabel" :class="ui.childLabel()">
-                {{ item.label }}
-              </li>
-              <li>
-                <UNavigationMenu
-                  :items="item.children"
-                  :ui="{ linkLabel: 'whitespace-normal', childLinkLabel: 'whitespace-normal' }"
-                  orientation="vertical"
-                  class="min-w-48"
-                />
-              </li>
-            </ul>
+          <template #admin-content>
+            <UNavigationMenu
+              :items="adminLinks"
+              :ui="{ linkLabel: 'whitespace-normal' }"
+              orientation="vertical"
+              class="min-w-48"
+            />
+          </template>
+          <template #am-content>
+            <UNavigationMenu
+              :items="amLinks"
+              :ui="{ linkLabel: 'whitespace-normal' }"
+              orientation="vertical"
+              class="min-w-48"
+            />
           </template>
         </UNavigationMenu>
       </template>

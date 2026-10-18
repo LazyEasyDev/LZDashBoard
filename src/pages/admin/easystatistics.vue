@@ -14,6 +14,7 @@ import { apiRequest } from '../../composables/useAuth'
 const { t, locale } = useI18n()
 const items = ref<StatisticsDefinition[]>([])
 const search = ref('')
+const appliedSearch = ref('')
 const expanded = ref<ExpandedState>({})
 const sorting = ref<SortingState>([{ id: 'name', desc: false }])
 const loading = ref(false)
@@ -25,7 +26,7 @@ const totalDBCount = ref<number | null>(null)
 const activeDBCount = ref<number | null>(null)
 const fetchedAt = ref(0)
 const maxQueryBuckets = ref(500)
-const filteredItems = computed(() => filterStatistics(items.value, search.value))
+const filteredItems = computed(() => filterStatistics(items.value, appliedSearch.value))
 const columns = computed<TableColumn<StatisticsDefinition>[]>(() => [
   { id: 'expand', size: 48, enableSorting: false },
   { accessorKey: 'name', header: t('statisticsName') },
@@ -79,6 +80,12 @@ async function refresh() {
   await Promise.all([loadDefinitions(), loadBatches()])
 }
 
+async function searchDefinitions() {
+  if (loading.value || batchesLoading.value) return
+  appliedSearch.value = search.value.trim()
+  await refresh()
+}
+
 function toggleRow(event: Event, row: TableRow<StatisticsDefinition>) {
   if (event.target instanceof Element && event.target.closest('button, a, input, select, textarea')) return
   row.toggleExpanded()
@@ -108,7 +115,7 @@ onBeforeUnmount(() => {
           :ui="{ title: 'whitespace-pre-wrap [overflow-wrap:anywhere]', description: 'whitespace-pre-wrap [overflow-wrap:anywhere]' }"
           role="alert"
         />
-        <div class="flex flex-wrap items-center gap-3">
+        <form class="flex flex-wrap items-center gap-3" @submit.prevent="searchDefinitions">
           <UInput
             v-model="search"
             icon="i-lucide-search"
@@ -117,17 +124,15 @@ onBeforeUnmount(() => {
             :aria-label="t('statisticsSearch')"
             class="min-w-0 flex-1 basis-[calc(100%-3rem)] sm:basis-auto sm:max-w-sm"
           />
-          <UTooltip :text="t('statisticsRefresh')">
-            <UButton
-              icon="i-lucide-refresh-cw"
-              color="neutral"
-              variant="ghost"
-              :loading="loading || batchesLoading"
-              :aria-label="t('statisticsRefresh')"
-              class="size-8 shrink-0 justify-center"
-              @click="refresh"
-            />
-          </UTooltip>
+          <UButton
+            type="submit"
+            icon="i-lucide-search"
+            color="primary"
+            variant="soft"
+            :loading="loading || batchesLoading"
+          >
+            {{ t('usersSearch') }}
+          </UButton>
           <UBadge color="neutral" variant="subtle">
             {{ t('statisticsRegisteredCount', { count: items.length }) }}
           </UBadge>
@@ -145,7 +150,7 @@ onBeforeUnmount(() => {
             {{ t('usersReadOnly') }}
           </UBadge>
           <span v-if="fetchedAt" class="text-xs text-muted sm:ms-auto">{{ t('statisticsFetched', { time: formatStatisticsTime(new Date(fetchedAt * 1000).toISOString(), locale) }) }}</span>
-        </div>
+        </form>
         <div v-if="batchesError" class="flex items-start gap-2">
           <UAlert
             color="error"

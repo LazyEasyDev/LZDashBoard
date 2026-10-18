@@ -14,6 +14,7 @@ const toast = useToast()
 const { canManageUsers: canManageDBKV } = useAuth()
 const records = ref<DBKVRecord[]>([])
 const search = ref('')
+const appliedSearch = ref('')
 const page = ref(1)
 const pageSize = ref(20)
 const pageSizeOptions = [10, 20, 50].map(value => ({ label: String(value), value }))
@@ -34,7 +35,7 @@ const deleteConfirmed = computed(() => !!deleteTarget.value && deleteConfirmatio
 const deleting = ref(false)
 const deleteError = ref<ApiErrorContent | null>(null)
 const busy = computed(() => saving.value || deleting.value)
-const filteredRecords = computed(() => filterDBKVRecords(records.value, search.value))
+const filteredRecords = computed(() => filterDBKVRecords(records.value, appliedSearch.value))
 const lastPage = computed(() => Math.max(1, Math.ceil(filteredRecords.value.length / pageSize.value)))
 const pageRecords = computed(() => filteredRecords.value.slice((page.value - 1) * pageSize.value, page.value * pageSize.value))
 const firstVisible = computed(() => filteredRecords.value.length ? (page.value - 1) * pageSize.value + 1 : 0)
@@ -100,6 +101,13 @@ function openCreate() {
   editorOpen.value = true
 }
 
+async function searchRecords() {
+  if (loading.value || busy.value) return
+  appliedSearch.value = search.value.trim()
+  page.value = 1
+  await loadRecords()
+}
+
 function openEdit(record: DBKVRecord) {
   if (!canManageDBKV.value || busy.value) return
   creating.value = false
@@ -117,7 +125,10 @@ async function saveRecord() {
     await apiRequest('/admin/dbkv/set', { ...form, key: form.key.trim() })
     editorOpen.value = false
     toast.add({ title: t('dbkvSaved'), color: 'success' })
-    if (wasCreating) search.value = ''
+    if (wasCreating) {
+      search.value = ''
+      appliedSearch.value = ''
+    }
     await loadRecords()
     if (wasCreating) page.value = lastPage.value
   } catch (error) {
@@ -158,7 +169,10 @@ watch(() => form.format, format => {
   else if (format === 'json_str') form.value = 'null'
   else form.value = ''
 })
-watch([search, pageSize], () => { page.value = 1 })
+watch(pageSize, () => {
+  page.value = 1
+  void loadRecords()
+})
 watch(lastPage, () => { page.value = Math.min(page.value, lastPage.value) })
 
 onMounted(loadRecords)
@@ -184,7 +198,7 @@ onBeforeUnmount(() => { requestVersion += 1 })
           role="alert"
         />
 
-        <div class="flex flex-wrap items-center gap-3">
+        <form class="flex flex-wrap items-center gap-3" @submit.prevent="searchRecords">
           <UInput
             v-model="search"
             icon="i-lucide-search"
@@ -193,18 +207,16 @@ onBeforeUnmount(() => { requestVersion += 1 })
             :aria-label="t('dbkvSearch')"
             class="min-w-0 flex-1 sm:max-w-md"
           />
-          <UTooltip :text="t('dbkvRefresh')">
-            <UButton
-              icon="i-lucide-refresh-cw"
-              color="neutral"
-              variant="ghost"
-              :aria-label="t('dbkvRefresh')"
-              :loading="loading"
-              :disabled="busy"
-              class="size-8 shrink-0 cursor-pointer justify-center"
-              @click="loadRecords"
-            />
-          </UTooltip>
+          <UButton
+            type="submit"
+            icon="i-lucide-search"
+            color="primary"
+            variant="soft"
+            :loading="loading"
+            :disabled="busy"
+          >
+            {{ t('usersSearch') }}
+          </UButton>
           <UBadge v-if="!canManageDBKV" color="neutral" variant="subtle">
             {{ t('dbkvReadOnly') }}
           </UBadge>
@@ -218,7 +230,7 @@ onBeforeUnmount(() => { requestVersion += 1 })
           >
             {{ t('dbkvAdd') }}
           </UButton>
-        </div>
+        </form>
 
         <div class="overflow-auto rounded-md border border-default">
           <UTable

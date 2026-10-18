@@ -27,6 +27,9 @@ const records = ref<EasyRoutineRecord[]>([])
 const search = ref('')
 const statusFilter = ref('__all__')
 const hasPanic = ref(false)
+const appliedSearch = ref('')
+const appliedStatus = ref('__all__')
+const appliedHasPanic = ref(false)
 const loading = ref(false)
 const loadError = ref<ApiErrorContent | null>(null)
 const deleteOpen = ref(false)
@@ -46,7 +49,7 @@ const sortableColumns = ['name', 'status', 'history', 'success_count', 'failure_
 let requestVersion = 0
 
 const deleteConfirmed = computed(() => !!deleteTarget.value && deleteConfirmation.value === deleteTarget.value.name)
-const filteredRecords = computed(() => filterRoutines(records.value, search.value, statusFilter.value === '__all__' ? '' : statusFilter.value, hasPanic.value))
+const filteredRecords = computed(() => filterRoutines(records.value, appliedSearch.value, appliedStatus.value === '__all__' ? '' : appliedStatus.value, appliedHasPanic.value))
 const statusOptions = computed(() => [
   { label: t('routineAllStatuses'), value: '__all__' },
   ...[...new Set([...routineStatuses, ...records.value.map(record => record.status)])]
@@ -122,6 +125,15 @@ async function loadLogs(routineID: string, retry = false) {
   }
 }
 
+async function searchRoutines() {
+  if (loading.value || deleting.value) return
+  appliedSearch.value = search.value.trim()
+  appliedStatus.value = statusFilter.value
+  appliedHasPanic.value = hasPanic.value
+  pagination.value.pageIndex = 0
+  await loadRoutines()
+}
+
 function openStatusLogs(row: TableRow<EasyRoutineRecord>, status: string) {
   logFilters[row.id] = status
   row.toggleExpanded(true)
@@ -165,7 +177,10 @@ watch(expanded, value => {
     void loadLogs(id)
   }
 }, { deep: true })
-watch([search, statusFilter, hasPanic, () => pagination.value.pageSize], () => { pagination.value.pageIndex = 0 })
+watch(() => pagination.value.pageSize, () => {
+  pagination.value.pageIndex = 0
+  void loadRoutines()
+})
 watch(lastPage, () => { pagination.value.pageIndex = Math.min(pagination.value.pageIndex, lastPage.value - 1) })
 onMounted(loadRoutines)
 onBeforeUnmount(() => { requestVersion += 1 })
@@ -190,7 +205,7 @@ onBeforeUnmount(() => { requestVersion += 1 })
           role="alert"
         />
 
-        <div class="flex flex-wrap items-center gap-3">
+        <form class="flex flex-wrap items-center gap-3" @submit.prevent="searchRoutines">
           <UInput
             v-model="search"
             icon="i-lucide-search"
@@ -199,18 +214,6 @@ onBeforeUnmount(() => { requestVersion += 1 })
             :aria-label="t('routineSearch')"
             class="min-w-0 flex-1 basis-[calc(100%-3rem)] sm:basis-auto sm:max-w-sm"
           />
-          <UTooltip :text="t('routineRefresh')">
-            <UButton
-              icon="i-lucide-refresh-cw"
-              color="neutral"
-              variant="ghost"
-              :aria-label="t('routineRefresh')"
-              :loading="loading"
-              :disabled="deleting"
-              class="size-8 shrink-0 justify-center"
-              @click="loadRoutines"
-            />
-          </UTooltip>
           <USelect
             v-model="statusFilter"
             :items="statusOptions"
@@ -219,13 +222,23 @@ onBeforeUnmount(() => { requestVersion += 1 })
             class="w-44"
           />
           <UCheckbox v-model="hasPanic" :label="t('routineHasPanic')" />
+          <UButton
+            type="submit"
+            icon="i-lucide-search"
+            color="primary"
+            variant="soft"
+            :loading="loading"
+            :disabled="deleting"
+          >
+            {{ t('usersSearch') }}
+          </UButton>
           <UBadge v-if="!canManageRoutines" color="neutral" variant="subtle">
             {{ t('usersReadOnly') }}
           </UBadge>
           <span v-if="fetchedAt" class="text-xs text-muted sm:ms-auto">
             {{ t('routineFetched', { time: formatRoutineTime(fetchedAt, locale) }) }}
           </span>
-        </div>
+        </form>
 
         <UTable
           v-model:expanded="expanded"

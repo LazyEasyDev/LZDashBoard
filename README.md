@@ -96,6 +96,22 @@ Run `pnpm typecheck` for Vue types, `pnpm exec tsc -p tsconfig.node.json` for
 Vite config types, and `pnpm lint` for source linting. Existing proxy-based tests
 have not been updated for direct API requests.
 
+## Table search behavior
+
+Main table Search actions always fetch fresh API data, even when the search
+inputs have not changed. Paginated searches start at page 1; changing page size
+also starts at page 1 and reloads data. Editing inputs alone does not apply them.
+
+The Users toolbar Search reruns the applied filters; Apply filters in its drawer
+commits the draft filters and runs the same search flow. Removing filter chips
+or resetting filters also searches from page 1.
+
+Users and referral statistics use server-side pagination. DBKV and EasyRoutine
+fetch complete snapshots, apply the submitted filters locally, and paginate
+those snapshots locally. EasyStatistics reloads its definition snapshot and
+summary counts before applying the submitted name filter. Separate error-retry
+actions and expanded record/log views retain their specialized behavior.
+
 ## Admin Users API
 
 The dashboard page remains `/admin/users`. Its API requests use:

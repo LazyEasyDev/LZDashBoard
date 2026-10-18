@@ -7,7 +7,7 @@ export const authGuard: NavigationGuard = async to => {
   const path = to.path.replace(/\/+$/, '').toLowerCase() || '/'
   if (to.name === 'not-found' || publicPaths.has(path)) return true
 
-  const { user, restoreSession, canViewAdmin } = useAuth()
+  const { user, restoreSession, canViewAdmin, canViewAM } = useAuth()
   try {
     await restoreSession()
   } catch {
@@ -15,6 +15,9 @@ export const authGuard: NavigationGuard = async to => {
   }
   if (!user.value) return { path: '/user/login', query: { redirect: to.fullPath }, replace: true }
   if ((path === '/admin' || path.startsWith('/admin/')) && !canViewAdmin.value) {
+    return { path: '/', replace: true }
+  }
+  if ((path === '/am' || path.startsWith('/am/')) && !canViewAM.value) {
     return { path: '/', replace: true }
   }
   return true

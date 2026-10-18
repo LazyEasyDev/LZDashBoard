@@ -1,5 +1,6 @@
 import { authMessages } from './auth'
 import { adminUsersMessages } from './adminUsers'
+import { refStatisticsMessages } from './refStatistics'
 import { adminDBKVMessages } from './adminDBKV'
 import { referralMessages } from './referral'
 import { easyRoutineMessages } from './easyRoutine'
@@ -23,6 +24,7 @@ export type LanguageCode = typeof languageConfig.languages[number]['code']
 export const english = {
   ...authMessages.en,
   ...adminUsersMessages.en,
+  ...refStatisticsMessages.en,
   ...adminDBKVMessages.en,
   ...referralMessages.en,
   ...easyRoutineMessages.en,
@@ -57,6 +59,7 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
   'zh-CN': {
     ...authMessages['zh-CN'],
     ...adminUsersMessages['zh-CN'],
+    ...refStatisticsMessages['zh-CN'],
     ...adminDBKVMessages['zh-CN'],
     ...referralMessages['zh-CN'],
     ...easyRoutineMessages['zh-CN'],
@@ -86,6 +89,7 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
   es: {
     ...authMessages.es,
     ...adminUsersMessages.es,
+    ...refStatisticsMessages.es,
     ...adminDBKVMessages.es,
     ...referralMessages.es,
     ...easyRoutineMessages.es,
@@ -115,6 +119,7 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
   hi: {
     ...authMessages.hi,
     ...adminUsersMessages.hi,
+    ...refStatisticsMessages.hi,
     ...adminDBKVMessages.hi,
     ...referralMessages.hi,
     ...easyRoutineMessages.hi,
@@ -144,6 +149,7 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
   fr: {
     ...authMessages.fr,
     ...adminUsersMessages.fr,
+    ...refStatisticsMessages.fr,
     ...adminDBKVMessages.fr,
     ...referralMessages.fr,
     ...easyRoutineMessages.fr,
@@ -173,6 +179,7 @@ export const messages: Record<LanguageCode, Record<TranslationKey, string>> = {
   ar: {
     ...authMessages.ar,
     ...adminUsersMessages.ar,
+    ...refStatisticsMessages.ar,
     ...adminDBKVMessages.ar,
     ...referralMessages.ar,
     ...easyRoutineMessages.ar,
