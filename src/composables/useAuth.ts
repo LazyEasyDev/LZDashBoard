@@ -11,7 +11,7 @@ export interface SessionUser {
 }
 
 export class ApiError extends Error {
-  constructor(public status: number, public detail: string, public title = '') {
+  constructor(public status: number, public detail: string, public title = '', public clearReferral = false) {
     super(detail || title)
   }
 }
@@ -38,7 +38,7 @@ export async function apiRequest<Response>(path: string, body?: unknown): Promis
       : data && typeof data === 'object' && 'message' in data && typeof data.message === 'string'
         ? data.message
         : ''
-    throw new ApiError(response.status, detail, title)
+    throw new ApiError(response.status, detail, title, response.headers.get('X-Clear-Referral') === 'true')
   }
   return data as Response
 }

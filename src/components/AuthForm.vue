@@ -7,9 +7,9 @@ import AuthErrorHint from './AuthErrorHint.vue'
 import { createAuthSchemas } from './authSchema'
 import { authErrorKey } from './authErrors'
 import { apiErrorContent } from './apiErrors'
-import { apiRequest, safeLocalRedirect, useAuth } from '../composables/useAuth'
+import { ApiError, apiRequest, safeLocalRedirect, useAuth } from '../composables/useAuth'
 import type { SessionUser } from '../composables/useAuth'
-import { readReferralCookie } from '../composables/referral'
+import { clearReferralCookie, readReferralCookie } from '../composables/referral'
 
 const props = defineProps<{ mode: 'login' | 'register' | 'reset' }>()
 const { locale, t } = useI18n()
@@ -142,6 +142,7 @@ async function submit() {
             ...(referral ? { ref: referral } : {})
           }
         : body)
+      if (props.mode === 'register') clearReferralCookie()
       setUser(result)
       destination = redirect.value
     }
@@ -149,6 +150,9 @@ async function submit() {
     state.confirmation = ''
     state.email_code = ''
   } catch (error) {
+    if (props.mode === 'register' && error instanceof ApiError && error.clearReferral) {
+      clearReferralCookie()
+    }
     requestError.value = error
   } finally {
     await refreshCaptcha()

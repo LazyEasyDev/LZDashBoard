@@ -12,7 +12,9 @@ interface UserRecord {
   name: string | null
   email: string
   access: string[]
-  ref: string
+  ref_userid: number | null
+  ref_channel: string | null
+  last_login: string | null
   reg_ip: string
   created_at: string
   updated_at: string
@@ -43,15 +45,39 @@ const accessOptions = ref(['user', 'admin', 'viewall', 'am'])
 const idSearch = ref('')
 const nameSearch = ref('')
 const emailSearch = ref('')
-const refSearch = ref('')
+const refUserIDSearch = ref('')
+const refChannelSearch = ref('')
+const refChannelDisabled = computed(() => refUserIDSearch.value.trim() === '')
+const refChannelHintOpen = ref(false)
+watch(refUserIDSearch, () => {
+  refChannelSearch.value = ''
+  refChannelHintOpen.value = false
+}, { flush: 'sync' })
 const regIPSearch = ref('')
 const appliedID = ref('')
 const appliedName = ref('')
 const appliedEmail = ref('')
-const appliedRef = ref('')
+const appliedRefUserID = ref('')
+const appliedRefChannel = ref('')
 const appliedRegIP = ref('')
 const accessFilter = ref(allAccessFilter)
 const appliedAccess = ref(allAccessFilter)
+const filtersOpen = ref(false)
+const filterFields = [
+  { key: 'id', label: 'usersId', draft: idSearch, applied: appliedID, empty: '' },
+  { key: 'name', label: 'usersName', draft: nameSearch, applied: appliedName, empty: '' },
+  { key: 'email', label: 'usersEmail', draft: emailSearch, applied: appliedEmail, empty: '' },
+  { key: 'ref_userid', label: 'usersRefUserID', draft: refUserIDSearch, applied: appliedRefUserID, empty: '' },
+  { key: 'ref_channel', label: 'usersRefChannel', draft: refChannelSearch, applied: appliedRefChannel, empty: '' },
+  { key: 'reg_ip', label: 'usersRegIP', draft: regIPSearch, applied: appliedRegIP, empty: '' },
+  { key: 'access', label: 'usersAccess', draft: accessFilter, applied: appliedAccess, empty: allAccessFilter }
+]
+const activeFilters = computed(() => filterFields
+  .filter(field => field.applied.value !== field.empty)
+  .map(field => ({ key: field.key, label: `${t(field.label)}: ${field.applied.value}` })))
+watch(filtersOpen, open => {
+  if (open) restoreFilterDrafts()
+})
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
@@ -70,7 +96,9 @@ const columns = computed<TableColumn<UserRecord>[]>(() => {
     { accessorKey: 'name', header: t('usersName') },
     { accessorKey: 'email', header: t('usersEmail') },
     { accessorKey: 'access', header: t('usersAccess') },
-    { accessorKey: 'ref', header: t('usersRef') },
+    { accessorKey: 'ref_userid', header: t('usersRefUserID') },
+    { accessorKey: 'ref_channel', header: t('usersRefChannel') },
+    { accessorKey: 'last_login', header: t('usersLastLogin') },
     { accessorKey: 'reg_ip', header: t('usersRegIP') },
     { accessorKey: 'created_at', header: t('usersCreated') }
   ]
@@ -133,7 +161,8 @@ async function loadUsers() {
   if (appliedID.value) query.set('id', appliedID.value)
   if (appliedName.value) query.set('name', appliedName.value)
   if (appliedEmail.value) query.set('email', appliedEmail.value)
-  if (appliedRef.value) query.set('ref', appliedRef.value)
+  if (appliedRefUserID.value) query.set('ref_userid', appliedRefUserID.value)
+  if (appliedRefChannel.value) query.set('ref_channel', appliedRefChannel.value)
   if (appliedRegIP.value) query.set('reg_ip', appliedRegIP.value)
   if (appliedAccess.value !== allAccessFilter) query.set('access', appliedAccess.value)
   try {
@@ -158,11 +187,30 @@ function applyFilters() {
   appliedID.value = idSearch.value.trim()
   appliedName.value = nameSearch.value.trim()
   appliedEmail.value = emailSearch.value.trim()
-  appliedRef.value = refSearch.value.trim()
+  appliedRefUserID.value = refUserIDSearch.value.trim()
+  appliedRefChannel.value = refChannelDisabled.value ? '' : refChannelSearch.value.trim()
   appliedRegIP.value = regIPSearch.value.trim()
   appliedAccess.value = accessFilter.value
+  filtersOpen.value = false
   if (page.value === 1) void loadUsers()
   else page.value = 1
+}
+
+function restoreFilterDrafts() {
+  for (const field of filterFields) field.draft.value = field.applied.value
+}
+
+function clearFilters() {
+  for (const field of filterFields) field.draft.value = field.empty
+  applyFilters()
+}
+
+function removeFilter(key: string) {
+  restoreFilterDrafts()
+  const field = filterFields.find(field => field.key === key)
+  if (!field) return
+  field.draft.value = field.empty
+  applyFilters()
 }
 
 async function saveUser() {
@@ -208,13 +256,13 @@ void loadUsers()
 </script>
 
 <template>
-  <UDashboardPanel id="users">
+  <UDashboardPanel id="users" :ui="{ body: 'overflow-hidden p-0 sm:p-0' }">
     <template #header>
       <AppNavbar title-key="users" />
     </template>
 
     <template #body>
-      <div class="flex min-h-0 flex-1 flex-col gap-4 p-4 sm:p-6">
+      <div class="flex min-h-0 flex-1 flex-col gap-3 p-3 sm:p-4">
         <UAlert
           v-if="loadError"
           color="error"
@@ -226,96 +274,196 @@ void loadUsers()
           role="alert"
         />
 
-        <div class="flex flex-col overflow-hidden rounded-md border border-default">
-          <form
-            class="space-y-3 border-b border-accented px-4 py-3.5"
-            @submit.prevent="applyFilters"
-          >
-            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-7">
-              <UInput
-                v-model="idSearch"
-                variant="soft"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                maxlength="20"
-                :placeholder="t('usersId')"
-                :aria-label="t('usersId')"
-                class="w-full"
-              />
-              <UInput
-                v-model="nameSearch"
-                variant="soft"
-                :placeholder="t('usersName')"
-                :aria-label="t('usersName')"
-                class="w-full"
-              />
-              <UInput
-                v-model="emailSearch"
-                variant="soft"
-                :placeholder="t('usersEmail')"
-                :aria-label="t('usersEmail')"
-                class="w-full"
-              />
-              <UInput
-                v-model="refSearch"
-                variant="soft"
-                maxlength="26"
-                :placeholder="t('usersRef')"
-                :aria-label="t('usersRef')"
-                class="w-full"
-              />
-              <UInput
-                v-model="regIPSearch"
-                variant="soft"
-                maxlength="45"
-                :placeholder="t('usersRegIP')"
-                :aria-label="t('usersRegIP')"
-                dir="ltr"
-                class="w-full"
-              />
-              <USelect
-                v-model="accessFilter"
-                :items="accessFilterOptions"
-                variant="soft"
-                :aria-label="t('usersAccessFilter')"
-                class="w-full"
-              />
-              <UButton
-                type="submit"
-                icon="i-lucide-funnel"
-                color="neutral"
-                variant="soft"
-                :loading="loading"
-                block
-                class="cursor-pointer justify-center whitespace-normal"
-              >
-                {{ t('usersSearch') }}
-              </UButton>
-            </div>
-            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-7">
+        <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-default">
+          <div class="flex shrink-0 items-center gap-2 border-b border-default p-3">
+            <UButton
+              icon="i-lucide-sliders-horizontal"
+              color="neutral"
+              variant="soft"
+              @click="filtersOpen = true"
+            >
+              {{ t('usersFilters') }}
               <UBadge
-                v-if="!canManageUsers"
+                v-if="activeFilters.length"
                 color="neutral"
                 variant="subtle"
-                class="w-fit self-center"
+                size="sm"
               >
-                {{ t('usersReadOnly') }}
+                {{ activeFilters.length }}
               </UBadge>
+            </UButton>
+            <UTooltip :text="t('usersRefresh')">
               <UButton
-                v-if="canManageUsers"
-                type="button"
-                icon="i-lucide-user-plus"
-                variant="soft"
-                block
-                class="cursor-pointer justify-center whitespace-normal"
-                @click="openCreate"
+                icon="i-lucide-refresh-cw"
+                color="neutral"
+                variant="ghost"
+                :loading="loading"
+                :aria-label="t('usersRefresh')"
+                @click="loadUsers"
+              />
+            </UTooltip>
+            <UButton
+              v-if="canManageUsers"
+              icon="i-lucide-user-plus"
+              variant="soft"
+              class="ml-auto"
+              @click="openCreate"
+            >
+              {{ t('usersAdd') }}
+            </UButton>
+            <UBadge
+              v-else
+              color="neutral"
+              variant="subtle"
+              class="ml-auto"
+            >
+              {{ t('usersReadOnly') }}
+            </UBadge>
+          </div>
+          <div v-if="activeFilters.length" class="flex shrink-0 flex-wrap items-center gap-2 border-b border-default px-3 py-2">
+            <UButton
+              v-for="filter in activeFilters"
+              :key="filter.key"
+              color="neutral"
+              variant="soft"
+              size="xs"
+              trailing-icon="i-lucide-x"
+              :aria-label="t('usersRemoveFilter', { filter: filter.label })"
+              class="max-w-full"
+              :ui="{ label: 'truncate' }"
+              @click="removeFilter(filter.key)"
+            >
+              {{ filter.label }}
+            </UButton>
+            <UButton
+              color="neutral"
+              variant="link"
+              size="xs"
+              @click="clearFilters"
+            >
+              {{ t('usersClearFilters') }}
+            </UButton>
+          </div>
+          <USlideover v-model:open="filtersOpen" :title="t('usersFilters')">
+            <template #body>
+              <form
+                id="users-filter-form"
+                class="space-y-4"
+                @submit.prevent="applyFilters"
               >
-                {{ t('usersAdd') }}
-              </UButton>
-            </div>
-          </form>
+                <div class="grid grid-cols-1 gap-4">
+                  <UFormField :label="t('usersId')">
+                    <UInput
+                      v-model="idSearch"
+                      variant="soft"
+                      inputmode="numeric"
+                      pattern="[0-9]*"
+                      maxlength="20"
+                      :placeholder="t('usersId')"
+                      :aria-label="t('usersId')"
+                      class="w-full"
+                    />
+                  </UFormField>
+                  <UFormField :label="t('usersName')">
+                    <UInput
+                      v-model="nameSearch"
+                      variant="soft"
+                      :placeholder="t('usersName')"
+                      :aria-label="t('usersName')"
+                      class="w-full"
+                    />
+                  </UFormField>
+                  <UFormField :label="t('usersEmail')">
+                    <UInput
+                      v-model="emailSearch"
+                      variant="soft"
+                      :placeholder="t('usersEmail')"
+                      :aria-label="t('usersEmail')"
+                      class="w-full"
+                    />
+                  </UFormField>
+                  <UFormField :label="t('usersRefUserID')">
+                    <UInput
+                      v-model="refUserIDSearch"
+                      variant="soft"
+                      inputmode="numeric"
+                      pattern="[0-9]*"
+                      maxlength="20"
+                      :placeholder="t('usersRefUserID')"
+                      :aria-label="t('usersRefUserID')"
+                      class="w-full"
+                    />
+                  </UFormField>
+                  <UFormField :label="t('usersRefChannel')">
+                    <UPopover v-if="refChannelDisabled" v-model:open="refChannelHintOpen">
+                      <span
+                        role="button"
+                        tabindex="0"
+                        :aria-label="t('usersRefChannelNeedsUserID')"
+                        class="block w-full"
+                        @keydown.enter.prevent="refChannelHintOpen = !refChannelHintOpen"
+                        @keydown.space.prevent="refChannelHintOpen = !refChannelHintOpen"
+                      >
+                        <UInput
+                          disabled
+                          variant="soft"
+                          :placeholder="t('usersRefChannel')"
+                          :aria-label="t('usersRefChannel')"
+                          class="pointer-events-none w-full"
+                        />
+                      </span>
+                      <template #content>
+                        <p class="px-3 py-2 text-sm">
+                          {{ t('usersRefChannelNeedsUserID') }}
+                        </p>
+                      </template>
+                    </UPopover>
+                    <UInput
+                      v-else
+                      v-model="refChannelSearch"
+                      variant="soft"
+                      maxlength="32"
+                      :placeholder="t('usersRefChannel')"
+                      :aria-label="t('usersRefChannel')"
+                      class="w-full"
+                    />
+                  </UFormField>
+                  <UFormField :label="t('usersRegIP')">
+                    <UInput
+                      v-model="regIPSearch"
+                      variant="soft"
+                      maxlength="45"
+                      :placeholder="t('usersRegIP')"
+                      :aria-label="t('usersRegIP')"
+                      dir="ltr"
+                      class="w-full"
+                    />
+                  </UFormField>
+                  <UFormField :label="t('usersAccess')">
+                    <USelect
+                      v-model="accessFilter"
+                      :items="accessFilterOptions"
+                      variant="soft"
+                      :aria-label="t('usersAccessFilter')"
+                      class="w-full"
+                    />
+                  </UFormField>
+                </div>
+              </form>
+            </template>
+            <template #footer>
+              <div class="flex w-full items-center justify-between gap-2">
+                <UButton color="neutral" variant="outline" @click="clearFilters">
+                  {{ t('usersClearFilters') }}
+                </UButton>
+                <UButton type="submit" form="users-filter-form" icon="i-lucide-check">
+                  {{ t('usersApplyFilters') }}
+                </UButton>
+              </div>
+            </template>
+          </USlideover>
 
-          <div class="max-h-[60vh] overflow-auto">
+          <div class="min-h-0 flex-1 overflow-auto">
             <UTable
               :data="users"
               :columns="columns"
@@ -348,8 +496,19 @@ void loadUsers()
                 </div>
               </template>
 
-              <template #ref-cell="{ row }">
-                <span class="font-mono text-xs whitespace-nowrap">{{ row.original.ref || '-' }}</span>
+              <template #ref_userid-cell="{ row }">
+                <span class="font-mono text-xs whitespace-nowrap">{{ row.original.ref_userid ?? '-' }}</span>
+              </template>
+
+              <template #ref_channel-cell="{ row }">
+                <span class="font-mono text-xs whitespace-nowrap">{{ row.original.ref_channel ?? '-' }}</span>
+              </template>
+
+              <template #last_login-cell="{ row }">
+                <time v-if="row.original.last_login" :datetime="row.original.last_login" class="whitespace-nowrap text-muted">
+                  {{ formatDate(row.original.last_login) }}
+                </time>
+                <span v-else class="text-muted">-</span>
               </template>
 
               <template #reg_ip-cell="{ row }">
@@ -384,7 +543,7 @@ void loadUsers()
           </div>
 
           <div
-            class="flex flex-col gap-3 border-t border-default px-4 py-3.5 sm:flex-row sm:items-center"
+            class="flex shrink-0 flex-col gap-2 border-t border-default px-3 py-2 sm:flex-row sm:items-center"
           >
             <p class="text-sm text-muted">
               {{ t('usersShowing', { from: firstVisible, to: lastVisible, total }) }}

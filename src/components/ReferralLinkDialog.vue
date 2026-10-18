@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { ref, shallowRef, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { apiErrorContent } from './apiErrors'
 import type { ApiErrorContent } from './apiErrors'
-import { generateReferralLink } from '../composables/referral'
+import { generateReferralLink, isReferralChannel, referralChannelPattern } from '../composables/referral'
 
 const open = defineModel<boolean>('open', { default: false })
 const { t } = useI18n()
 const toast = useToast()
 const link = ref('')
+const channel = ref('')
+const validChannel = computed(() => isReferralChannel(channel.value))
 const generating = ref(false)
 const copying = ref(false)
 const error = shallowRef<ApiErrorContent | null>(null)
@@ -21,18 +23,23 @@ watch(open, value => {
   if (value) {
     link.value = ''
     error.value = null
-    void generate()
+    channel.value = ''
   }
 })
 
+watch(channel, () => {
+  link.value = ''
+  error.value = null
+})
+
 async function generate() {
-  if (generating.value) return
+  if (generating.value || !validChannel.value) return
   error.value = null
   const sequence = ++requestSequence
   generating.value = true
   link.value = ''
   try {
-    const result = await generateReferralLink()
+    const result = await generateReferralLink(channel.value)
     if (sequence === requestSequence) link.value = result
   } catch (reason) {
     if (sequence === requestSequence) error.value = apiErrorContent(reason, t('referralGenerateError'))
@@ -70,6 +77,26 @@ async function copyLink() {
           :ui="{ title: 'whitespace-pre-wrap [overflow-wrap:anywhere]', description: 'whitespace-pre-wrap [overflow-wrap:anywhere]' }"
           role="alert"
         />
+        <UFormField
+          :label="t('referralChannel')"
+          :description="t('referralChannelHelp')"
+          :error="channel && !validChannel ? t('referralChannelInvalid') : undefined"
+          required
+        >
+          <UInput
+            v-model="channel"
+            :disabled="generating"
+            :pattern="referralChannelPattern"
+            minlength="3"
+            maxlength="32"
+            required
+            autocomplete="off"
+            autocapitalize="off"
+            :spellcheck="false"
+            dir="ltr"
+            class="w-full"
+          />
+        </UFormField>
         <UFormField :label="t('referralLink')">
           <UTextarea
             :model-value="link"
@@ -107,6 +134,7 @@ async function copyLink() {
           type="button"
           icon="i-lucide-refresh-cw"
           :loading="generating"
+          :disabled="!validChannel"
           class="whitespace-normal"
           @click="generate"
         >
