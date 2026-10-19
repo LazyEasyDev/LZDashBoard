@@ -7,6 +7,7 @@ const errorKeys: Record<string, TranslationKey> = {
   'invalid or expired email code; request a new code': 'invalidEmailCode',
   'invalid email or password': 'invalidCredentials',
   'email is already registered': 'emailAlreadyRegistered',
+  'email is not registered': 'emailNotRegistered',
   'invalid email address': 'invalidEmail',
   'unable to send verification email': 'emailSendFailed',
   'email verification is unavailable': 'emailVerificationUnavailable',

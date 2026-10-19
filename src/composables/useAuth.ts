@@ -10,8 +10,13 @@ export interface SessionUser {
   updated_at: string
 }
 
+export interface ApiValidationError {
+  message: string
+  location?: string
+}
+
 export class ApiError extends Error {
-  constructor(public status: number, public detail: string, public title = '', public clearReferral = false) {
+  constructor(public status: number, public detail: string, public title = '', public clearReferral = false, public errors: ApiValidationError[] = []) {
     super(detail || title)
   }
 }
@@ -38,7 +43,18 @@ export async function apiRequest<Response>(path: string, body?: unknown): Promis
       : data && typeof data === 'object' && 'message' in data && typeof data.message === 'string'
         ? data.message
         : ''
-    throw new ApiError(response.status, detail, title, response.headers.get('X-Clear-Referral') === 'true')
+    const errors: ApiValidationError[] = []
+    if ((response.status === 400 || response.status === 422) && data && typeof data === 'object' && 'errors' in data && Array.isArray(data.errors)) {
+      for (const field of data.errors) {
+        if (field && typeof field === 'object' && 'message' in field && typeof field.message === 'string' && field.message.trim()) {
+          errors.push({
+            message: field.message,
+            ...(typeof field.location === 'string' && field.location ? { location: field.location } : {})
+          })
+        }
+      }
+    }
+    throw new ApiError(response.status, detail, title, response.headers.get('X-Clear-Referral') === 'true', errors)
   }
   return data as Response
 }

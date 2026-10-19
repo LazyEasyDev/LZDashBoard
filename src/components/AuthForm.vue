@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref, shallowRef, useTemplateRef, watch } from 'vue'
+import { computed, onMounted, reactive, ref, useTemplateRef, watch } from 'vue'
 import { useNow } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import AuthErrorHint from './AuthErrorHint.vue'
 import { createAuthSchemas } from './authSchema'
 import { authErrorKey } from './authErrors'
-import { apiErrorContent } from './apiErrors'
 import { ApiError, apiRequest, safeLocalRedirect, useAuth } from '../composables/useAuth'
 import type { SessionUser } from '../composables/useAuth'
 import { clearReferralCookie, readReferralCookie } from '../composables/referral'
+import type { TranslationKey } from '../i18n/locales'
 
 const props = defineProps<{ mode: 'login' | 'register' | 'reset' }>()
 const { locale, t } = useI18n()
+const toast = useToast()
 const router = useRouter()
 const route = useRoute()
 const { user, setUser, logout } = useAuth()
@@ -42,11 +43,6 @@ const submitting = ref(false)
 const sendingCode = ref(false)
 const retryingLogout = ref(false)
 const busy = computed(() => submitting.value || sendingCode.value || retryingLogout.value)
-const requestError = shallowRef<unknown>(null)
-const emailCodeSent = ref(false)
-const errorContent = computed(() => requestError.value === null
-  ? null
-  : apiErrorContent(requestError.value, t(authErrorKey(requestError.value))))
 const showPassword = ref(false)
 const now = useNow({ interval: 1000 })
 const cooldownUntil = ref(0)
@@ -54,6 +50,31 @@ const cooldown = computed(() => Math.max(0, Math.ceil((cooldownUntil.value - now
 const redirect = computed(() => safeLocalRedirect(route.query.redirect))
 const redirectQuery = computed(() => redirect.value === '/' ? {} : { redirect: redirect.value })
 let captchaRequest = 0
+
+const notificationOpen = ref(false)
+const notification = ref<{ message: TranslationKey, color: 'error' | 'success' | 'warning' }>({
+  message: 'requestFailed',
+  color: 'error'
+})
+
+function showNotification(message: TranslationKey, color: 'error' | 'success' | 'warning') {
+  if (color === 'success') {
+    toast.add({
+      title: t(titleKey.value),
+      description: t(message),
+      color: 'success',
+      icon: 'i-lucide-circle-check',
+      duration: 5000
+    })
+    return
+  }
+  notification.value = { message, color }
+  notificationOpen.value = true
+}
+
+function showRequestError(error: unknown) {
+  showNotification(authErrorKey(error), 'error')
+}
 
 watch(locale, () => {
   if (form.value?.getErrors().length) {
@@ -89,8 +110,6 @@ function captchaImageFailed() {
 
 async function sendEmailCode() {
   if (busy.value || cooldown.value || !captchaId.value || captchaLoading.value) return
-  requestError.value = null
-  emailCodeSent.value = false
   const validated = schemas.value.emailCode.safeParse({ email: state.email, captcha: state.captcha })
   if (!validated.success) {
     form.value?.setErrors(validated.error.issues.map(issue => ({ name: issue.path.join('.'), message: issue.message })))
@@ -106,9 +125,9 @@ async function sendEmailCode() {
     })
     now.value = new Date()
     cooldownUntil.value = now.value.getTime() + 30_000
-    emailCodeSent.value = true
+    showNotification('emailCodeSent', 'success')
   } catch (error) {
-    requestError.value = error
+    showRequestError(error)
   } finally {
     await refreshCaptcha()
     sendingCode.value = false
@@ -118,8 +137,6 @@ async function sendEmailCode() {
 async function submit() {
   if (busy.value || !captchaId.value || captchaLoading.value) return
   submitting.value = true
-  requestError.value = null
-  emailCodeSent.value = false
   let destination: string | undefined
   const referral = props.mode === 'register' ? readReferralCookie() : ''
   const body = {
@@ -153,7 +170,7 @@ async function submit() {
     if (props.mode === 'register' && error instanceof ApiError && error.clearReferral) {
       clearReferralCookie()
     }
-    requestError.value = error
+    showRequestError(error)
   } finally {
     await refreshCaptcha()
     submitting.value = false
@@ -163,21 +180,53 @@ async function submit() {
 
 async function retryLogout() {
   retryingLogout.value = true
-  requestError.value = null
   try {
     await logout()
     await router.replace('/user/login')
   } catch (error) {
-    requestError.value = error
+    showRequestError(error)
   } finally {
     retryingLogout.value = false
   }
 }
 
-onMounted(refreshCaptcha)
+onMounted(() => {
+  if (isLogin.value) {
+    if (route.query.reset === 'success') {
+      showNotification('resetSuccess', 'success')
+    }
+    if (route.query.session === 'unavailable') {
+      showNotification('sessionUnavailable', 'warning')
+    }
+    if (route.query.logout === 'failed') {
+      showNotification('logoutFailed', 'warning')
+    }
+  }
+  void refreshCaptcha()
+})
 </script>
 
 <template>
+  <UModal
+    v-model:open="notificationOpen"
+    :title="t(titleKey)"
+    :description="t(notification.message)"
+    :ui="{
+      overlay: 'bg-black/40 backdrop-blur-xs',
+      content: 'w-[calc(100%-2rem)] sm:max-w-[28rem] lg:max-w-lg',
+      title: 'flex items-center gap-2',
+      description: 'whitespace-pre-wrap [overflow-wrap:anywhere]'
+    }"
+  >
+    <template #title>
+      <UIcon
+        :name="notification.color === 'success' ? 'i-lucide-circle-check' : notification.color === 'warning' ? 'i-lucide-triangle-alert' : 'i-lucide-circle-alert'"
+        class="size-5 shrink-0"
+        :class="{ 'text-error': notification.color === 'error', 'text-success': notification.color === 'success', 'text-warning': notification.color === 'warning' }"
+      />
+      {{ t(titleKey) }}
+    </template>
+  </UModal>
   <section
     class="flex min-w-0 flex-col gap-6"
     :class="{ 'mt-4 pb-16': isLogin, 'pb-2': mode === 'reset' }"
@@ -188,28 +237,7 @@ onMounted(refreshCaptcha)
       </span>
     </h1>
 
-    <UAlert
-      v-if="isLogin && route.query.reset === 'success'"
-      color="success"
-      variant="subtle"
-      icon="i-lucide-circle-check"
-      :description="t('resetSuccess')"
-      role="status"
-    />
-    <UAlert
-      v-if="isLogin && route.query.session === 'unavailable'"
-      color="warning"
-      variant="subtle"
-      icon="i-lucide-triangle-alert"
-      :description="t('sessionUnavailable')"
-    />
     <div v-if="isLogin && route.query.logout === 'failed'" class="space-y-3">
-      <UAlert
-        color="warning"
-        variant="subtle"
-        :description="t('logoutFailed')"
-        role="alert"
-      />
       <UButton
         icon="i-lucide-log-out"
         color="neutral"
@@ -221,25 +249,6 @@ onMounted(refreshCaptcha)
         {{ t('retryLogout') }}
       </UButton>
     </div>
-    <UAlert
-      v-if="errorContent"
-      color="error"
-      variant="subtle"
-      icon="i-lucide-circle-alert"
-      :title="errorContent.title"
-      :description="errorContent.description"
-      :ui="{ title: 'whitespace-pre-wrap [overflow-wrap:anywhere]', description: 'whitespace-pre-wrap [overflow-wrap:anywhere]' }"
-      role="alert"
-    />
-    <UAlert
-      v-if="emailCodeSent"
-      color="success"
-      variant="subtle"
-      icon="i-lucide-circle-check"
-      :description="t('emailCodeSent')"
-      role="status"
-    />
-
     <UForm
       ref="form"
       :schema="schemas.form"
