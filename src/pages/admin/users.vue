@@ -125,13 +125,13 @@ function resetForm(value: UserFormState) {
 }
 
 function openCreate() {
-  if (!canManageUsers.value) return
+  if (!canManageUsers.value || saving.value) return
   resetForm(emptyForm())
   editorOpen.value = true
 }
 
 function openEdit(user: UserRecord) {
-  if (!canManageUsers.value) return
+  if (!canManageUsers.value || saving.value) return
   resetForm({
     id: user.id,
     name: user.name ?? '',
@@ -575,7 +575,13 @@ void loadUsers()
         </div>
       </div>
 
-      <UModal v-model:open="editorOpen" :title="editorTitle" :description="editorDescription">
+      <UModal
+        v-model:open="editorOpen"
+        :title="editorTitle"
+        :description="editorDescription"
+        :dismissible="!saving"
+        :close="!saving"
+      >
         <template #body>
           <form id="user-editor-form" class="space-y-4" @submit.prevent="saveUser">
             <UAlert
@@ -589,11 +595,17 @@ void loadUsers()
               role="alert"
             />
             <UFormField :label="t('usersNameOptional')">
-              <UInput v-model="form.name" maxlength="100" class="w-full" />
+              <UInput
+                v-model="form.name"
+                :disabled="saving"
+                maxlength="100"
+                class="w-full"
+              />
             </UFormField>
             <UFormField :label="t('email')" required>
               <UInput
                 v-model="form.email"
+                :disabled="saving"
                 type="email"
                 maxlength="254"
                 required
@@ -607,6 +619,7 @@ void loadUsers()
             >
               <UInput
                 v-model="form.password"
+                :disabled="saving"
                 type="password"
                 autocomplete="new-password"
                 :required="!editing"
@@ -623,6 +636,7 @@ void loadUsers()
                   :key="permission"
                   :model-value="form.access.includes(permission)"
                   :label="permission"
+                  :disabled="saving"
                   @update:model-value="toggleAccess(permission, $event === true)"
                 />
               </div>

@@ -90,7 +90,7 @@ async function refreshCaptcha() {
   captchaImage.value = ''
   state.captcha = ''
   try {
-    const result = await apiRequest<{ captcha_id: string, image: string }>('/user/captcha')
+    const result = await apiRequest<{ captcha_id: string, image: string }>('/user/captcha', undefined, { invalidateSessionOn401: false })
     if (!result.captcha_id || !result.image.startsWith('data:image/png;base64,')) throw new Error()
     if (request !== captchaRequest) return
     captchaId.value = result.captcha_id
@@ -122,7 +122,7 @@ async function sendEmailCode() {
       ...validated.data,
       purpose: props.mode === 'register' ? 'register' : 'reset_password',
       captcha_id: captchaId.value
-    })
+    }, { invalidateSessionOn401: false })
     now.value = new Date()
     cooldownUntil.value = now.value.getTime() + 30_000
     showNotification('emailCodeSent', 'success')
@@ -147,7 +147,7 @@ async function submit() {
   }
   try {
     if (props.mode === 'reset') {
-      await apiRequest<{ message: string }>('/user/reset_password', { ...body, email_code: state.email_code.trim() })
+      await apiRequest<{ message: string }>('/user/reset_password', { ...body, email_code: state.email_code.trim() }, { invalidateSessionOn401: false })
       setUser(null)
       destination = '/user/login?reset=success'
     } else {
@@ -158,7 +158,7 @@ async function submit() {
             email_code: state.email_code.trim(),
             ...(referral ? { ref: referral } : {})
           }
-        : body)
+        : body, { invalidateSessionOn401: false })
       if (props.mode === 'register') clearReferralCookie()
       setUser(result)
       destination = redirect.value
@@ -172,7 +172,7 @@ async function submit() {
     }
     showRequestError(error)
   } finally {
-    await refreshCaptcha()
+    if (!destination) await refreshCaptcha()
     submitting.value = false
   }
   if (destination) await router.replace(destination)

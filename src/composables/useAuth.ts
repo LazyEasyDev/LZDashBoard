@@ -21,7 +21,8 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiRequest<Response>(path: string, body?: unknown): Promise<Response> {
+export async function apiRequest<Response>(path: string, body?: unknown, options: { invalidateSessionOn401?: boolean } = {}): Promise<Response> {
+  const version = sessionVersion
   const requestMethod = body === undefined ? 'GET' : 'POST'
   const response = await fetch(`${API_ORIGIN}${path}`, {
 		method: requestMethod,
@@ -35,6 +36,9 @@ export async function apiRequest<Response>(path: string, body?: unknown): Promis
   })
   const data: unknown = await response.json().catch(() => null)
   if (!response.ok) {
+    if (response.status === 401 && options.invalidateSessionOn401 !== false && version === sessionVersion) {
+      setUser(null)
+    }
     const title = data && typeof data === 'object' && 'title' in data && typeof data.title === 'string'
       ? data.title
       : ''

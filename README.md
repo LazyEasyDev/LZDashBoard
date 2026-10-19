@@ -58,10 +58,14 @@ rules and SameSite cookie restrictions still apply; requests go directly to the 
 The backend returns the whole user from login/register and sets its configured
 HttpOnly auth cookie. Only profile/access data is retained in reactive memory;
 `api_token` is discarded and never persisted to browser storage.
+Protected API responses with status 401 clear the cached session; subsequent
+protected navigation returns to login. Failed public auth requests do not clear
+an existing session, and stale 401 responses cannot clear a newer login.
 
 CAPTCHA responses must be `{ captcha_id, image }`, with a PNG data URL. Every
-email-code send and form submission refreshes the consumed CAPTCHA, including
-failed requests. Successful email-code sends start a 30-second resend cooldown.
+email-code send and failed form submission refreshes the consumed CAPTCHA.
+Successful login, registration, and password reset navigate without requesting
+another CAPTCHA. Successful email-code sends start a 30-second resend cooldown.
 Email purposes are `register` and `reset_password`. Reset uses the same email-code
 flow, clears the local session on success, and returns to login. Password settings
 links to that reset flow.
@@ -74,7 +78,8 @@ Theme and language preferences are not session credentials and remain saved.
 
 ## API Endpoint
 
-`src/config/api.ts` defines the API origin, defaulting to `https://localhost:8443`.
+`src/config/api.ts` defines the API origin, defaulting to `https://localhost`
+(the default HTTPS port, 443).
 Only HTTPS URLs are accepted. Set `VITE_API_URL` in `.env.local` or the shell:
 
 ```bash
@@ -85,7 +90,8 @@ VITE_API_URL=https://api.xxx.com pnpm build
 The origin must not include an API path prefix. Requests go directly to that
 origin, without a Vite proxy. Open API documentation at the API origin's `/docs`.
 The browser must trust the API certificate too; for local development, visit
-`https://localhost:8443/health` and trust the local certificate.
+`https://localhost/health` and trust the local certificate (or use your configured
+API origin).
 
 Use `localhost` for both local servers. In production, serve the frontend over
 HTTPS and keep it on the same site as the API, such as `https://xxx.com` and
@@ -121,37 +127,46 @@ The dashboard page remains `/admin/users`. Its API requests use:
 - `POST /admin/users/update` with the same fields plus a required positive `id` in the JSON body. An empty password keeps the current password.
 
 Listing requires `admin` or `viewall`; creating and updating require `admin`.
+While a user save is pending, the editor cannot be dismissed, changed, or
+switched to another user. Failed saves keep the editor open for correction.
 The old API routes `/admin/users` and `/admin/users/{id}` are not supported.
 
 ## Referrals
 
 The lower-left account menu opens the referral-link generator. A user can generate
-links only for their authenticated account. Opening the dialog generates a link
-with a random five-letter lowercase ASCII tag. There is no tag input; the New
-link action generates another random channel. Incoming signed referrals may
-still omit the tag; a nonempty tag must contain exactly five lowercase letters.
+links only for their authenticated account. Enter a required channel of 3-32
+ASCII letters, digits, hyphens, or underscores, starting and ending with a letter
+or digit, then generate the link. The dashboard sends `{ channel }` to
+`POST /user/ref`; changing the channel clears the previously generated link.
 
-The registration URL uses `?ref=<token>&reference_channel=<tag>`. The visible
-`reference_channel` parameter is only a label: editing or removing it does not
-change attribution. The signed tag inside `ref` is authoritative.
+The registration URL uses `?ref=<token>&channel=<channel>`. The visible
+`channel` parameter is only a label: editing or removing it does not
+change attribution. The signed channel inside `ref` is authoritative.
 Tokens contain two separately
-Base64URL-encoded fields (user ID and tag), followed by an HMAC signature over the
+Base64URL-encoded fields (user ID and channel), followed by an HMAC signature over the
 exact dot-separated encoded fields. Every token is framed with `A` and `Z`.
 Keep the backend `HMACKey` persistent and identical across application instances;
 changing it invalidates previously shared links. Tokens are signed, not encrypted.
 
-Before authentication redirects, the dashboard validates a new referral through
-`GET /user/ref` and stores valid tokens in a host-only `ref` cookie with a 400-day
-maximum age, subject to browser limits. Later valid links overwrite it; missing
-or invalid links leave it unchanged. Registration submits the remembered token
-in its JSON body. Logout clears the referral cookie with all other cookies.
+Before authentication redirects, the dashboard checks a new referral's token
+shape locally, fetches the cookie lifetime from `GET /user/config`, and stores
+the token in a host-only `ref` cookie. The lifetime must be a positive integer
+no greater than 400 days; browser limits also apply. This does not validate the
+signature or referrer's existence. Later token-shaped links can overwrite the
+cookie even if their signatures are invalid; missing or malformed links and
+configuration-fetch failures leave it unchanged. Registration submits the
+remembered token in its JSON body. Logout clears the referral cookie with all
+other cookies.
 
-The backend verifies the signature, canonical user ID, tag format, and current
-existence of the referring user. The database stores only plain `userID:tag`,
-such as `123:email` or `123:`. Missing or invalid referrals, including failed
-referrer lookups, are discarded without preventing registration. Admin users
-can search `123` for that referrer, `email` for that tag, or `123:email` for the
-complete value.
+At registration, the backend verifies the signature, canonical user ID, channel
+format, and current existence of the referring user. Missing or invalid
+referrals are discarded without preventing registration; referrer lookup
+errors return 503 rather than silently discarding attribution. If an invalid
+referral accompanies a failed registration, the backend sends
+`X-Clear-Referral: true` so the frontend can clear it.
+The database stores the referring user ID and channel separately, exposed as
+`ref_userid` and `ref_channel`. Admin users filter by referring user ID, then
+optionally by channel; the channel filter requires a referring user ID.
 
 `reg_ip` is assigned by the backend during public registration and is shown only
 in admin responses. Direct EC2 connections use the socket address. For an ALB

@@ -18,7 +18,7 @@ export async function captureReferral(value: unknown): Promise<void> {
   if (!isReferralToken(value)) return
   const sequence = ++captureSequence
   try {
-    const result = await apiRequest<{ cookie_max_age_seconds: number }>('/user/config')
+    const result = await apiRequest<{ cookie_max_age_seconds: number }>('/user/config', undefined, { invalidateSessionOn401: false })
     if (sequence < acceptedSequence) return
     if (!Number.isInteger(result.cookie_max_age_seconds) || result.cookie_max_age_seconds <= 0
       || result.cookie_max_age_seconds > 400 * 24 * 60 * 60) {
