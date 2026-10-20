@@ -37,6 +37,10 @@ for built-in controls. Page headers share `src/components/AppNavbar.vue`.
 
 The header has language and light/dark controls. The theme preference is saved
 under `vueuse-color-scheme`; without an explicit choice, it follows the system.
+Both themes use neutral gray surfaces and borders with blue action accents.
+Shared color tokens live in `src/assets/css/main.css`; the Nuxt UI color palette
+and table styling are configured in `vite.config.ts`. The sidebar uses neutral
+active states to keep navigation distinct from primary actions.
 Auth strings live in `src/i18n/auth.ts` with complete translations for English,
 Simplified Chinese, Spanish, Hindi, French, and Arabic; existing translated
 navigation and Nuxt UI controls are unchanged.

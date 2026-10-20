@@ -50,13 +50,13 @@ const links = computed<NavigationMenuItem[]>(() => [{
   label: t('admin'),
   icon: 'i-lucide-shield-check',
   slot: 'admin',
-  ui: { childList: 'rounded-md bg-elevated/50 p-1.5' },
+  ui: { childList: 'p-1.5' },
   defaultOpen: true,
   type: 'trigger' as const,
   children: [{
       label: t('base'),
       type: 'label' as const,
-      ui: { label: 'mx-1 mb-1 w-fit rounded bg-accented/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted' }
+      ui: { label: 'mx-1 mb-1 w-fit px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted' }
     }, {
       label: t('users'),
       icon: 'i-lucide-users',
@@ -90,13 +90,13 @@ const links = computed<NavigationMenuItem[]>(() => [{
   label: t('amMenu'),
   icon: 'i-lucide-contact-round',
   slot: 'am',
-  ui: { childList: 'rounded-md bg-elevated/50 p-1.5' },
+  ui: { childList: 'p-1.5' },
   defaultOpen: true,
   type: 'trigger' as const,
   children: [{
     label: t('base'),
     type: 'label' as const,
-    ui: { label: 'mx-1 mb-1 w-fit rounded bg-accented/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted' }
+    ui: { label: 'mx-1 mb-1 w-fit px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted' }
   }, {
     label: t('refStatisticsTitle'),
     icon: 'i-lucide-chart-no-axes-combined',
@@ -133,7 +133,7 @@ const amLinks = computed(() => links.value.find(item => item.slot === 'am')?.chi
       v-model:open="open"
       collapsible
       resizable
-      class="bg-elevated/25"
+      class="bg-muted"
       :ui="{ header: 'px-2', footer: 'lg:border-t lg:border-default' }"
     >
       <template #header="{ collapsed }">
@@ -163,6 +163,7 @@ const amLinks = computed(() => links.value.find(item => item.slot === 'am')?.chi
         <UNavigationMenu
           :collapsed="collapsed"
           :items="links"
+          color="neutral"
           :ui="{ linkLabel: 'whitespace-normal', childLinkLabel: 'whitespace-normal' }"
           orientation="vertical"
           tooltip
@@ -171,6 +172,7 @@ const amLinks = computed(() => links.value.find(item => item.slot === 'am')?.chi
           <template #admin-content>
             <UNavigationMenu
               :items="adminLinks"
+              color="neutral"
               :ui="{ linkLabel: 'whitespace-normal' }"
               orientation="vertical"
               class="min-w-48"
@@ -179,6 +181,7 @@ const amLinks = computed(() => links.value.find(item => item.slot === 'am')?.chi
           <template #am-content>
             <UNavigationMenu
               :items="amLinks"
+              color="neutral"
               :ui="{ linkLabel: 'whitespace-normal' }"
               orientation="vertical"
               class="min-w-48"

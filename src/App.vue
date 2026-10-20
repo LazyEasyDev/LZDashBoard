@@ -24,7 +24,7 @@ const uiLocale = computed(() => ({
   }
 }))
 const { colorMode } = useAppTheme()
-const themeColor = computed(() => colorMode.value === 'dark' ? '#18181b' : '#ffffff')
+const themeColor = computed(() => colorMode.value === 'dark' ? '#0a0a0a' : '#ffffff')
 
 useHead(() => ({
   title: 'LZApp',

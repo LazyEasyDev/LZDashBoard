@@ -17,8 +17,21 @@ export default defineConfig({
     ui({
       ui: {
         colors: {
-          primary: 'sky',
-          neutral: 'zinc'
+          primary: 'blue',
+          neutral: 'neutral'
+        },
+        table: {
+          slots: {
+            thead: 'bg-muted',
+            th: 'font-medium text-toned',
+            tr: 'hover:bg-muted/50'
+          },
+          variants: {
+            sticky: {
+              true: { thead: 'bg-muted' },
+              header: { thead: 'bg-muted' }
+            }
+          }
         }
       }
     })
