@@ -99,8 +99,7 @@ HTTPS and keep it on the same site as the API, such as `https://xxx.com` and
 enabled on the API. Static hosting needs SPA history fallback.
 
 Run `pnpm typecheck` for Vue types, `pnpm exec tsc -p tsconfig.node.json` for
-Vite config types, and `pnpm lint` for source linting. Existing proxy-based tests
-have not been updated for direct API requests.
+Vite config types, `pnpm lint` for source linting, and `pnpm test` for tests.
 
 ## Table search behavior
 
@@ -169,13 +168,14 @@ The database stores the referring user ID and channel separately, exposed as
 optionally by channel; the channel filter requires a referring user ID.
 
 `reg_ip` is assigned by the backend during public registration and is shown only
-in admin responses. Direct EC2 connections use the socket address. For an ALB
-using `X-Forwarded-For` append mode, configure `HTTPConfig.TrustedProxyCIDRs` with
-the trusted load-balancer subnet CIDRs and restrict the EC2 application port to
-the load balancer's security group. The backend uses the last appended address
-only when the socket peer is trusted; otherwise it ignores forwarded headers.
-Leave trusted proxies empty for direct connections or an NLB that preserves
-client IP addresses.
+in admin responses. The backend uses the connection's socket address for both
+registration IPs and IP-based rate limits; it ignores `X-Forwarded-For` and other
+forwarded client-IP headers. Direct connections or an NLB configured to preserve
+client IP addresses retain the original client IP. Behind an ALB or another
+reverse proxy, the backend sees the proxy's source IP, so clients sharing that
+IP also share public-endpoint IP quotas. There is currently no
+`HTTPConfig.TrustedProxyCIDRs` setting. Supporting forwarded client IPs requires
+an explicit trusted-proxy implementation and appropriate network restrictions.
 
 ## Sidebar Width
 
