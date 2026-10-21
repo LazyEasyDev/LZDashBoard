@@ -356,7 +356,7 @@ describe('redirect safety', () => {
 })
 
 describe('route guard', () => {
-  it.each(['/admin/users/asdfasfd', '/missing-page', '/user/missing/deep?from=test#section'])('shows the public not-found route for %s without restoring cookies', async path => {
+  it.each(['/user', '/user/', '/admin/users/asdfasfd', '/missing-page', '/user/missing/deep?from=test#section'])('shows the public not-found route for %s without restoring cookies', async path => {
     fetchMock.mockRejectedValue(new TypeError('offline'))
     const router = await routerWithGuard()
     await router.push(path)

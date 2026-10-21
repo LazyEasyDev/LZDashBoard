@@ -87,15 +87,6 @@ declare module 'vue-router/auto-routes' {
       Record<never, never>,
       | never
     >,
-    '/user': RouteRecordInfo<
-      '/user',
-      '/user',
-      Record<never, never>,
-      Record<never, never>,
-      | '/user/login'
-      | '/user/register'
-      | '/user/reset-password'
-    >,
     '/user/login': RouteRecordInfo<
       '/user/login',
       '/user/login',
@@ -191,17 +182,6 @@ declare module 'vue-router/auto-routes' {
         | '/settings/exit'
       views:
         | never
-      pathParamNames:
-        | never
-    }
-    'src/pages/user.vue': {
-      routes:
-        | '/user'
-        | '/user/login'
-        | '/user/register'
-        | '/user/reset-password'
-      views:
-        | 'default'
       pathParamNames:
         | never
     }

@@ -50,7 +50,9 @@ navigation and Nuxt UI controls are unchanged.
 `/user/login`, `/user/register`, and `/user/reset-password` are public pages in
 `src/pages/user/`. `/settings/exit`
 also works with an expired session so leftover cookies can still be cleared.
-All other routes restore the cookie session with `GET /user` on the configured API origin before rendering.
+Unknown frontend URLs, including `/user` and `/user/`, show the public 404 page
+without restoring a session. All other routes restore the cookie session with
+`GET /user` on the configured API origin before rendering.
 Login and registration accept only safe local return URLs. The Admin navigation and direct
 `/admin/*` routes require an exact `admin` or `viewall` entry in the user's JSON
 `access` array. This is a UI guard, not authorization; the backend must enforce
